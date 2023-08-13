@@ -1,23 +1,26 @@
-; ----------------------------------------------------------------------------------------
-; Writes "Hello, World" to the console using only system calls. Runs on 64-bit Linux only.
-; To assemble and run:
-;
-;     nasm -felf64 hello_linux.asm && ld hello_linux.o && ./a.out
-;
-; Derived from the NASM tutorial at https://cs.lmu.edu/~ray/notes/nasmtutorial/
-; ----------------------------------------------------------------------------------------
+; global variables
+section .data
+    ; variable "msg" points to "hello world\n"
+    ; 10 = \n = 0xA
+    ; size/length = 12 (5 + 1 + 5 + 1)
+    msg db  "hello world", 10
+    ; MSG_LEN: equ $ - msg
+    ; NR_WRITE: equ 1
+    ; STDOUT: equ 1
 
-          global    _start
+; CPU instructions
+section .text
+    ; export "_start" symbol so linker can find it
+    global _start
 
-          section   .text
-_start:   mov       rax, 1                  ; system call for write
-          mov       rdi, 1                  ; file handle 1 is stdout
-          mov       rsi, message            ; address of string to output
-          mov       rdx, 13                 ; number of bytes
-          syscall                           ; invoke operating system to do the write
-          mov       rax, 60                 ; system call for exit
-          xor       rdi, rdi                ; exit code 0
-          syscall                           ; invoke operating system to exit
-
-          section   .data
-message:  db        "Hello, World", 10      ; note the newline at the end
+; program's entry point
+; aka, first instruction to execute is at this address
+_start:
+    mov rax, 1; write syscall number (__NR_WRITE)
+    mov rdi, 1; STDOUT
+    mov rsi, msg
+    mov rdx, 12; len(msg)
+    syscall
+    mov rax, 60; exit syscall number
+    mov rdi, 0; 0 argument, it could be `xor rdi, rdi`
+    syscall

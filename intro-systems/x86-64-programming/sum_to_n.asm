@@ -13,5 +13,5 @@ global sum_to_n
 ; n = rdi
 ; total will go into rax
 sum_to_n:
-	mov rax, 0
+	mov rax, rdi
 	ret

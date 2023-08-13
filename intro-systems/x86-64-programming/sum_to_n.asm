@@ -13,5 +13,16 @@ global sum_to_n
 ; n = rdi
 ; total will go into rax
 sum_to_n:
-	mov rax, rdi
+	; total = 0
+	mov eax, 0
+	; i = n
+	mov ecx, edi
+	jmp .loop
+.loop:
+	cmp ecx, 0
+	je .out
+	add eax, ecx
+	dec ecx
+	jmp .loop
+.out:
 	ret

@@ -20,7 +20,6 @@ sum_to_n:
 	mov eax, 0
 	; i = n
 	mov ecx, edi
-	jmp .loop
 .loop:
 	cmp ecx, 0
 	je .out

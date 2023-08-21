@@ -1,5 +1,10 @@
 # csi
 
+- Prework
+  - C https://github.com/evaporei/blz
+  - Go https://github.com/evaporei/xkcd
+  - Bash https://github.com/evaporei/wiki
+  - Algorithms & Data Structures https://github.com/evaporei/leetcode
 - Introduction to Computer Systems
   - Introduction https://github.com/evaporei/toy-vm
   - Binary Encodings of Data [exercises](./intro-systems/binary)

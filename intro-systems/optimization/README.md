@@ -159,6 +159,77 @@ $ perf stat ./a.out
 
 ## dotproduct
 
-Decided to not put the results here, they were not as good as the ones registered in `solution/dotproduct.c` comments. Removing the `get_vec_element` call was one of the best optimizations. I've created a `bench.c` to remove the testing framework and only run dotproduct stuff.
+The measuraments using the `time.h` API show performance improvements with the optimizations, but using `perf stat` gave worse data compared to the ones registered in `solution/dotproduct.c` comments, the fully optimized version had worse `Retiring`, `Backend Bound` and `Memory Bound` than the least optimized version. Removing the `get_vec_element` call was one of the best optimizations. I've created a `bench.c` to remove the testing framework and only run dotproduct stuff.
 
-Using `perf stat` gave terrible results, the fully optimized version had worse Backend Bound & Memory Bound than the least optimized version.
+Using the least optimized dotproduct implementation:
+```
+$ gcc -O2 bench.c vec.c dotproduct.c
+$ perf stat ./a.out
+0.16s to take product of length 100000000 vectors (1.55 ns per element)
+
+ Performance counter stats for './a.out':
+
+            441.38 msec task-clock:u                     #    0.998 CPUs utilized             
+                 0      context-switches:u               #    0.000 /sec                      
+                 0      cpu-migrations:u                 #    0.000 /sec                      
+              1817      page-faults:u                    #    4.117 K/sec                     
+        1236123531      cpu_core/cycles/u                #    2.801 G/sec                     
+     <not counted>      cpu_atom/cycles/u                                                       (0.00%)
+        6800140661      cpu_core/instructions/u          #   15.407 G/sec                     
+     <not counted>      cpu_atom/instructions/u                                                 (0.00%)
+        2000032178      cpu_core/branches/u              #    4.531 G/sec                     
+     <not counted>      cpu_atom/branches/u                                                     (0.00%)
+             10791      cpu_core/branch-misses/u         #   24.448 K/sec                     
+     <not counted>      cpu_atom/branch-misses/u                                                (0.00%)
+        7414936686      cpu_core/slots:u/                #   16.799 G/sec                     
+        6280887545      cpu_core/topdown-retiring/u      #     85.0% Retiring                 
+                 0      cpu_core/topdown-bad-spec/u      #      0.0% Bad Speculation          
+                 0      cpu_core/topdown-fe-bound/u      #      0.0% Frontend Bound           
+        1104970957      cpu_core/topdown-be-bound/u      #     15.0% Backend Bound            
+         494329112      cpu_core/topdown-heavy-ops/u     #      6.7% Heavy Operations          #     78.3% Light Operations         
+                 0      cpu_core/topdown-br-mispredict/u #      0.0% Branch Mispredict         #      0.0% Machine Clears           
+                 0      cpu_core/topdown-fetch-lat/u     #      0.0% Fetch Latency             #      0.0% Fetch Bandwidth          
+        1046814590      cpu_core/topdown-mem-bound/u     #     14.2% Memory Bound              #      0.8% Core Bound               
+
+       0.442298907 seconds time elapsed
+
+       0.262436000 seconds user
+       0.179373000 seconds sys
+
+```
+
+Using the most optimized dotproduct implementation:
+```
+$ gcc -O2 bench.c vec.c dotproduct.c
+$ perf stat ./a.out
+0.06s to take product of length 100000000 vectors (0.56 ns per element)
+
+ Performance counter stats for './a.out':
+
+            403.53 msec task-clock:u                     #    0.997 CPUs utilized             
+                 0      context-switches:u               #    0.000 /sec                      
+                 0      cpu-migrations:u                 #    0.000 /sec                      
+              1816      page-faults:u                    #    4.500 K/sec                     
+        1100559201      cpu_core/cycles/u                #    2.727 G/sec                     
+     <not counted>      cpu_atom/cycles/u                                                       (0.00%)
+        3400140631      cpu_core/instructions/u          #    8.426 G/sec                     
+     <not counted>      cpu_atom/instructions/u                                                 (0.00%)
+         925032129      cpu_core/branches/u              #    2.292 G/sec                     
+     <not counted>      cpu_atom/branches/u                                                     (0.00%)
+              9070      cpu_core/branch-misses/u         #   22.476 K/sec                     
+     <not counted>      cpu_atom/branch-misses/u                                                (0.00%)
+        6601863078      cpu_core/slots:u/                #   16.360 G/sec                     
+        3080869436      cpu_core/topdown-retiring/u      #     46.7% Retiring                 
+           1052841      cpu_core/topdown-bad-spec/u      #      0.0% Bad Speculation          
+          25889659      cpu_core/topdown-fe-bound/u      #      0.4% Frontend Bound           
+        3495103982      cpu_core/topdown-be-bound/u      #     52.9% Backend Bound            
+         207117273      cpu_core/topdown-heavy-ops/u     #      3.1% Heavy Operations          #     43.5% Light Operations         
+            526420      cpu_core/topdown-br-mispredict/u #      0.0% Branch Mispredict         #      0.0% Machine Clears           
+           1579262      cpu_core/topdown-fetch-lat/u     #      0.0% Fetch Latency             #      0.4% Fetch Bandwidth          
+        2977310799      cpu_core/topdown-mem-bound/u     #     45.1% Memory Bound              #      7.8% Core Bound               
+
+       0.404560238 seconds time elapsed
+
+       0.257149000 seconds user
+       0.146887000 seconds sys
+```

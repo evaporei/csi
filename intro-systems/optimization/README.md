@@ -156,3 +156,9 @@ $ perf stat ./a.out
        0.018435000 seconds user
        0.000000000 seconds sys
 ```
+
+## dotproduct
+
+Decided to not put the results here, they were not as good as the ones registered in `solution/dotproduct.c` comments. Removing the `get_vec_element` call was one of the best optimizations. I've created a `bench.c` to remove the testing framework and only run dotproduct stuff.
+
+Using `perf stat` gave terrible results, the fully optimized version had worse Backend Bound & Memory Bound than the least optimized version.

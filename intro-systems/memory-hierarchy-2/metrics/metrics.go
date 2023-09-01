@@ -57,13 +57,12 @@ func AverageAge(users *UserData) float64 {
 }
 
 func AveragePaymentAmount(users *UserData) float64 {
-	average, count := 0.0, 0.0
+	average := 0.0
 	for _, dollarAmount := range users.amounts {
-		count += 1
 		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents)/100
-		average += (amount - average) / count
+		average += amount
 	}
-	return average
+	return average / float64(len(users.amounts))
 }
 
 // Compute the standard deviation of payment amounts

@@ -50,3 +50,10 @@ Do only one division in average `age` instead of one per element.
 ```bash
 BenchmarkMetrics/Average_age-8         	   12769	     94525 ns/op 
 ```
+
+Do the same for `average` (there's still a division by 100 for the `cents`):
+
+```bash
+BenchmarkMetrics/Average_payment-8     	    1242	    959322 ns/op
+BenchmarkMetrics/Payment_stddev-8      	     528	   2271891 ns/op
+```

@@ -59,7 +59,7 @@ func AverageAge(users *UserData) float64 {
 func AveragePaymentAmount(users *UserData) float64 {
 	average := 0.0
 	for _, dollarAmount := range users.amounts {
-		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents)/100
+		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents) * 0.01
 		average += amount
 	}
 	return average / float64(len(users.amounts))
@@ -71,7 +71,7 @@ func StdDevPaymentAmount(users *UserData) float64 {
 	squaredDiffs, count := 0.0, 0.0
 	for _, dollarAmount := range users.amounts {
 		count += 1
-		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents)/100
+		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents) * 0.01
 		diff := amount - mean
 		squaredDiffs += diff * diff
 	}

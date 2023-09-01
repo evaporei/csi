@@ -57,3 +57,10 @@ Do the same for `average` (there's still a division by 100 for the `cents`):
 BenchmarkMetrics/Average_payment-8     	    1242	    959322 ns/op
 BenchmarkMetrics/Payment_stddev-8      	     528	   2271891 ns/op
 ```
+
+Remove divisions by `100` in `cents`. No change in performance probably because the compiler was already optimizing this.
+
+```bash
+BenchmarkMetrics/Average_payment-8     	    1242	    964086 ns/op
+BenchmarkMetrics/Payment_stddev-8      	     535	   2240803 ns/op
+```

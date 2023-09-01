@@ -105,10 +105,10 @@ func LoadData() *UserData {
 		log.Fatalln("Unable to parse payments.csv as csv", err)
 	}
 
-	var amounts []DollarAmount
-	for _, line := range paymentLines {
+	amounts := make([]DollarAmount, len(paymentLines))
+	for i, line := range paymentLines {
 		paymentCents, _ := strconv.Atoi(line[0])
-		amounts = append(amounts, DollarAmount{uint64(paymentCents / 100), uint64(paymentCents % 100)})
+		amounts[i] = DollarAmount{uint64(paymentCents / 100), uint64(paymentCents % 100)}
 	}
 
 	return &UserData {

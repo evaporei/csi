@@ -48,7 +48,7 @@ type User struct {
 	payments []Payment
 }
 
-func AverageAge(users *UserData) float64 {
+func AverageAge(users UserData) float64 {
 	average := 0.0
 	for _, age := range users.ages {
 		average += float64(age)
@@ -56,7 +56,7 @@ func AverageAge(users *UserData) float64 {
 	return average / float64(len(users.ages))
 }
 
-func AveragePaymentAmount(users *UserData) float64 {
+func AveragePaymentAmount(users UserData) float64 {
 	average := 0.0
 	for _, dollarAmount := range users.amounts {
 		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents) * 0.01
@@ -66,7 +66,7 @@ func AveragePaymentAmount(users *UserData) float64 {
 }
 
 // Compute the standard deviation of payment amounts
-func StdDevPaymentAmount(users *UserData) float64 {
+func StdDevPaymentAmount(users UserData) float64 {
 	mean := AveragePaymentAmount(users)
 	squaredDiffs, count := 0.0, 0.0
 	for _, dollarAmount := range users.amounts {
@@ -78,7 +78,7 @@ func StdDevPaymentAmount(users *UserData) float64 {
 	return math.Sqrt(squaredDiffs / count)
 }
 
-func LoadData() *UserData {
+func LoadData() UserData {
 	f, err := os.Open("users.csv")
 	if err != nil {
 		log.Fatalln("Unable to read users.csv", err)
@@ -111,7 +111,7 @@ func LoadData() *UserData {
 		amounts[i] = DollarAmount{uint64(paymentCents / 100), uint64(paymentCents % 100)}
 	}
 
-	return &UserData {
+	return UserData {
 		ages,
 		amounts,
 	}

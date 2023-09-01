@@ -31,3 +31,16 @@ BenchmarkMetrics/Payment_stddev-8      	     189	   6327712 ns/op
 PASS
 ok  	command-line-arguments	5.583s
 ```
+
+Changing `ages` to be `uint8` instead of `int`. No difference.
+
+```bash
+$ go test -bench=. *.go
+goos: darwin
+goarch: arm64
+BenchmarkMetrics/Average_age-8         	    2384	    505523 ns/op
+BenchmarkMetrics/Average_payment-8     	     234	   5168928 ns/op
+BenchmarkMetrics/Payment_stddev-8      	     189	   6325219 ns/op
+PASS
+ok  	command-line-arguments	5.582s
+```

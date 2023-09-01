@@ -13,7 +13,7 @@ import (
 type UserId int
 
 type UserData struct {
-	ages []int
+	ages []uint8
 	amounts []DollarAmount
 }
 
@@ -91,10 +91,10 @@ func LoadData() *UserData {
 		log.Fatalln("Unable to parse users.csv as csv", err)
 	}
 
-	ages := make([]int, len(userLines))
+	ages := make([]uint8, len(userLines))
 	for i, line := range userLines {
 		age, _ := strconv.Atoi(line[2])
-		ages[i] = age
+		ages[i] = uint8(age)
 	}
 
 	f, err = os.Open("payments.csv")

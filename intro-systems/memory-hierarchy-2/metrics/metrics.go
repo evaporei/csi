@@ -49,48 +49,54 @@ type User struct {
 }
 
 func AverageAge(users UserData) float64 {
-	average := uint64(0)
+	sum0, sum1, sum2, sum3 := uint64(0), uint64(0), uint64(0), uint64(0)
 	for i := 0 ; i < len(users.ages) / 4 * 4 ; i += 4 {
-		average += uint64(users.ages[i])
-		average += uint64(users.ages[i + 1])
-		average += uint64(users.ages[i + 2])
-		average += uint64(users.ages[i + 3])
+		sum0 += uint64(users.ages[i])
+		sum1 += uint64(users.ages[i + 1])
+		sum2 += uint64(users.ages[i + 2])
+		sum3 += uint64(users.ages[i + 3])
 	}
-	return float64(average) / float64(len(users.ages))
+	return float64(sum0 + sum1 + sum2 + sum3) / float64(len(users.ages))
 }
 
 func AveragePaymentAmount(users UserData) float64 {
-	sum := uint64(0)
+	sum0, sum1, sum2, sum3 := uint64(0), uint64(0), uint64(0), uint64(0)
 	for i := 0 ; i < len(users.amounts) / 4 * 4 ; i += 4 {
-		sum += uint64(users.amounts[i])
-		sum += uint64(users.amounts[i + 1])
-		sum += uint64(users.amounts[i + 2])
-		sum += uint64(users.amounts[i + 3])
+		sum0 += uint64(users.amounts[i])
+		sum1 += uint64(users.amounts[i + 1])
+		sum2 += uint64(users.amounts[i + 2])
+		sum3 += uint64(users.amounts[i + 3])
 	}
-	return 0.01 * float64(sum) / float64(len(users.amounts))
+	return 0.01 * float64(sum0 + sum1 + sum2 + sum3) / float64(len(users.amounts))
 }
 
 // Compute the standard deviation of payment amounts
 // Variance[X] = E[X^2] - E[X]^2
 func StdDevPaymentAmount(users UserData) float64 {
-	sumSquare, sum := 0.0, 0.0
+	sumSquare0, sum0 := 0.0, 0.0
+	sumSquare1, sum1 := 0.0, 0.0
+	sumSquare2, sum2 := 0.0, 0.0
+	sumSquare3, sum3 := 0.0, 0.0
 	for i := 0 ; i < len(users.amounts) / 4 * 4 ; i += 4 {
 		x := float64(users.amounts[i]) * 0.01
-		sumSquare += x * x
-		sum += x
+		sumSquare0 += x * x
+		sum0 += x
 
 		x = float64(users.amounts[i + 1]) * 0.01
-		sumSquare += x * x
-		sum += x
+		sumSquare1 += x * x
+		sum1 += x
 
 		x = float64(users.amounts[i + 2]) * 0.01
-		sumSquare += x * x
-		sum += x
+		sumSquare2 += x * x
+		sum2 += x
 
 		x = float64(users.amounts[i + 3]) * 0.01
-		sumSquare += x * x
-		sum += x
+		sumSquare3 += x * x
+		sum3 += x
 	}
+	sumSquare := sumSquare0 + sumSquare1 + sumSquare2 + sumSquare3
+	sum := sum0 + sum1 + sum2 + sum3
+
 	count := float64(len(users.amounts))
 	avgSquare := sumSquare / count
 	avg := sum / count

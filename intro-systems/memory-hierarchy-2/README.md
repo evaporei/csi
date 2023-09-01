@@ -90,3 +90,16 @@ BenchmarkMetrics/Payment_stddev-8      	     957	   1254484 ns/op
 PASS
 ok  	command-line-arguments	4.800s
 ```
+
+Multiple accumulators, blazingly fast :sunglasses: (not by much though at this point).
+
+```bash
+$ go test -bench=. *.go
+goos: darwin
+goarch: arm64
+BenchmarkMetrics/Average_age-8         	   47128	     25440 ns/op
+BenchmarkMetrics/Average_payment-8     	    4846	    244435 ns/op
+BenchmarkMetrics/Payment_stddev-8      	    2547	    469918 ns/op
+PASS
+ok  	command-line-arguments	4.647s
+```

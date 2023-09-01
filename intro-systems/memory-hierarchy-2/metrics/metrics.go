@@ -9,28 +9,39 @@ import (
 	"time"
 )
 
+// 4 bytes
 type UserId int
+// 8 bytes (ptr, word)
 type UserMap map[UserId]*User
 
+// 12 bytes at least,  but probably 16 bytes w/ padding
 type Address struct {
+	// 8 bytes (ptr, word)
 	fullAddress string
+	// 4 bytes
 	zip         int
 }
 
+// 16 bytes
 type DollarAmount struct {
 	dollars, cents uint64
 }
 
+// 40 bytes
 type Payment struct {
 	amount DollarAmount
+	// 24 bytes
 	time   time.Time
 }
 
+// 4 + 8 + 4 + 12 + 12
+// 40 bytes
 type User struct {
 	id       UserId
 	name     string
 	age      int
 	address  Address
+	// 12 bytes
 	payments []Payment
 }
 

@@ -50,16 +50,22 @@ type User struct {
 
 func AverageAge(users UserData) float64 {
 	average := uint64(0)
-	for _, age := range users.ages {
-		average += uint64(age)
+	for i := 0 ; i < len(users.ages) / 4 * 4 ; i += 4 {
+		average += uint64(users.ages[i])
+		average += uint64(users.ages[i + 1])
+		average += uint64(users.ages[i + 2])
+		average += uint64(users.ages[i + 3])
 	}
 	return float64(average) / float64(len(users.ages))
 }
 
 func AveragePaymentAmount(users UserData) float64 {
 	sum := uint64(0)
-	for _, paymentCents := range users.amounts {
-		sum += uint64(paymentCents)
+	for i := 0 ; i < len(users.amounts) / 4 * 4 ; i += 4 {
+		sum += uint64(users.amounts[i])
+		sum += uint64(users.amounts[i + 1])
+		sum += uint64(users.amounts[i + 2])
+		sum += uint64(users.amounts[i + 3])
 	}
 	return 0.01 * float64(sum) / float64(len(users.amounts))
 }
@@ -68,8 +74,20 @@ func AveragePaymentAmount(users UserData) float64 {
 // Variance[X] = E[X^2] - E[X]^2
 func StdDevPaymentAmount(users UserData) float64 {
 	sumSquare, sum := 0.0, 0.0
-	for _, paymentCents := range users.amounts {
-		x := float64(paymentCents) * 0.01
+	for i := 0 ; i < len(users.amounts) / 4 * 4 ; i += 4 {
+		x := float64(users.amounts[i]) * 0.01
+		sumSquare += x * x
+		sum += x
+
+		x = float64(users.amounts[i + 1]) * 0.01
+		sumSquare += x * x
+		sum += x
+
+		x = float64(users.amounts[i + 2]) * 0.01
+		sumSquare += x * x
+		sum += x
+
+		x = float64(users.amounts[i + 3]) * 0.01
 		sumSquare += x * x
 		sum += x
 	}

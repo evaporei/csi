@@ -12,3 +12,4 @@
   - Further x86-64 assembly programing [exercises](./intro-systems/further-x86-64)
   - Low Level Optimization [exercises](./intro-systems/optimization)
   - The Memory Hierarchy [exercises](./intro-systems/memory-hierarchy)
+  - The Memory Hierarchy 2 [exercises](./intro-systems/memory-hierarchy-2)

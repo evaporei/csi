@@ -64,3 +64,16 @@ Remove divisions by `100` in `cents`. No change in performance probably because 
 BenchmarkMetrics/Average_payment-8     	    1242	    964086 ns/op
 BenchmarkMetrics/Payment_stddev-8      	     535	   2240803 ns/op
 ```
+
+Removing most divisions and optimizing standard deviation. This gets to the provided solution performance (look into solution folder).
+
+```bash
+$ go test -bench=. *.go
+goos: darwin
+goarch: arm64
+BenchmarkMetrics/Average_age-8         	   38312	     31443 ns/op
+BenchmarkMetrics/Average_payment-8     	    3556	    342336 ns/op
+BenchmarkMetrics/Payment_stddev-8      	     956	   1252118 ns/op
+PASS
+ok  	command-line-arguments	4.883s
+```

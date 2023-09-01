@@ -14,7 +14,7 @@ type UserId int
 
 type UserData struct {
 	ages []uint8
-	amounts []DollarAmount
+	amounts []uint32 // paymentCents
 }
 
 // 12 bytes at least,  but probably 16 bytes w/ padding
@@ -49,33 +49,34 @@ type User struct {
 }
 
 func AverageAge(users UserData) float64 {
-	average := 0.0
+	average := uint64(0)
 	for _, age := range users.ages {
-		average += float64(age)
+		average += uint64(age)
 	}
-	return average / float64(len(users.ages))
+	return float64(average) / float64(len(users.ages))
 }
 
 func AveragePaymentAmount(users UserData) float64 {
-	average := 0.0
-	for _, dollarAmount := range users.amounts {
-		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents) * 0.01
-		average += amount
+	sum := uint64(0)
+	for _, paymentCents := range users.amounts {
+		sum += uint64(paymentCents)
 	}
-	return average / float64(len(users.amounts))
+	return 0.01 * float64(sum) / float64(len(users.amounts))
 }
 
 // Compute the standard deviation of payment amounts
+// Variance[X] = E[X^2] - E[X]^2
 func StdDevPaymentAmount(users UserData) float64 {
-	mean := AveragePaymentAmount(users)
-	squaredDiffs, count := 0.0, 0.0
-	for _, dollarAmount := range users.amounts {
-		count += 1
-		amount := float64(dollarAmount.dollars) + float64(dollarAmount.cents) * 0.01
-		diff := amount - mean
-		squaredDiffs += diff * diff
+	sumSquare, sum := 0.0, 0.0
+	for _, paymentCents := range users.amounts {
+		x := float64(paymentCents) * 0.01
+		sumSquare += x * x
+		sum += x
 	}
-	return math.Sqrt(squaredDiffs / count)
+	count := float64(len(users.amounts))
+	avgSquare := sumSquare / count
+	avg := sum / count
+	return math.Sqrt(avgSquare - avg * avg)
 }
 
 func LoadData() UserData {
@@ -105,10 +106,10 @@ func LoadData() UserData {
 		log.Fatalln("Unable to parse payments.csv as csv", err)
 	}
 
-	amounts := make([]DollarAmount, len(paymentLines))
+	amounts := make([]uint32, len(paymentLines))
 	for i, line := range paymentLines {
-		paymentCents, _ := strconv.Atoi(line[0])
-		amounts[i] = DollarAmount{uint64(paymentCents / 100), uint64(paymentCents % 100)}
+		paymentCents, _ := strconv.ParseUint(line[0], 10, 32)
+		amounts[i] = uint32(paymentCents)
 	}
 
 	return UserData {

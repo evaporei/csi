@@ -7,12 +7,11 @@ import (
 
 func BenchmarkMetrics(b *testing.B) {
 	users := LoadData()
-	ages := LoadAges(users)
 
 	b.Run("Average age", func(b *testing.B) {
 		actual := 0.0
 		for n := 0; n < b.N; n++ {
-			actual = AverageAge(ages)
+			actual = AverageAge(users)
 		}
 		expected := 59.62
 		if math.IsNaN(actual) || math.Abs(actual-expected) > 0.01 {

@@ -49,12 +49,11 @@ type User struct {
 }
 
 func AverageAge(users *UserData) float64 {
-	average, count := 0.0, 0.0
+	average := 0.0
 	for _, age := range users.ages {
-		count += 1
-		average += (float64(age) - average) / count
+		average += float64(age)
 	}
-	return average
+	return average / float64(len(users.ages))
 }
 
 func AveragePaymentAmount(users *UserData) float64 {

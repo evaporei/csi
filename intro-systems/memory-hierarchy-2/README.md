@@ -44,3 +44,9 @@ BenchmarkMetrics/Payment_stddev-8      	     189	   6325219 ns/op
 PASS
 ok  	command-line-arguments	5.582s
 ```
+
+Do only one division in average `age` instead of one per element.
+
+```bash
+BenchmarkMetrics/Average_age-8         	   12769	     94525 ns/op 
+```

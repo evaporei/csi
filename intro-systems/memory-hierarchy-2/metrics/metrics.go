@@ -45,11 +45,11 @@ type User struct {
 	payments []Payment
 }
 
-func AverageAge(users UserMap) float64 {
+func AverageAge(ages []int) float64 {
 	average, count := 0.0, 0.0
-	for _, u := range users {
+	for _, age := range ages {
 		count += 1
-		average += (float64(u.age) - average) / count
+		average += (float64(age) - average) / count
 	}
 	return average
 }
@@ -123,4 +123,12 @@ func LoadData() UserMap {
 	}
 
 	return users
+}
+
+func LoadAges(users UserMap) []int {
+	ages := make([]int, len(users))
+	for i, u := range users {
+		ages[i] = u.age
+	}
+	return ages
 }

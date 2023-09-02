@@ -24,8 +24,8 @@ void matrix_multiply(double **C, double **A, double **B, int a_rows, int a_cols,
   }
 }
 
-void fast_matrix_multiply(double **c, double **a, double **b, int a_rows,
+void fast_matrix_multiply(double **C, double **A, double **B, int a_rows,
                           int a_cols, int b_cols) {
   // TODO: write a faster implementation here!
-  return matrix_multiply(c, a, b, a_rows, a_cols, b_cols);
+  return matrix_multiply(C, A, B, a_rows, a_cols, b_cols);
 }

@@ -29,6 +29,6 @@ void option_two() {
 
 int main() {
   option_one();
-  // option_two();
+  option_two();
   return 0;
 }

@@ -13,3 +13,4 @@
   - Low Level Optimization [exercises](./intro-systems/optimization)
   - The Memory Hierarchy [exercises](./intro-systems/memory-hierarchy)
   - The Memory Hierarchy 2 [exercises](./intro-systems/memory-hierarchy-2)
+  - Exceptional Control Flow https://github.com/evaporei/snowshell

@@ -6,6 +6,7 @@ There must be a better way!
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
   A naive implementation of matrix multiplication.
@@ -24,8 +25,19 @@ void matrix_multiply(double **C, double **A, double **B, int a_rows, int a_cols,
   }
 }
 
+void matrix_init(double **matrix, int m, int n) {
+  for (int i = 0; i < m; i++) {
+    memset(matrix[i], 0, n * sizeof(double));
+  }
+}
+
 void fast_matrix_multiply(double **C, double **A, double **B, int a_rows,
                           int a_cols, int b_cols) {
-  // TODO: write a faster implementation here!
-  return matrix_multiply(C, A, B, a_rows, a_cols, b_cols);
+  matrix_init(C, a_rows, b_cols);
+  for (int i = 0; i < a_rows; i++) {
+    for (int j = 0; j < b_cols; j++) {
+      for (int k = 0; k < a_cols; k++)
+        C[i][j] += A[i][k] * B[k][j];
+    }
+  }
 }

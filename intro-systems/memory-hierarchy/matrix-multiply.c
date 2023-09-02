@@ -35,8 +35,8 @@ void fast_matrix_multiply(double **C, double **A, double **B, int a_rows,
                           int a_cols, int b_cols) {
   matrix_init(C, a_rows, b_cols);
   for (int i = 0; i < a_rows; i++) {
-    for (int j = 0; j < b_cols; j++) {
-      for (int k = 0; k < a_cols; k++)
+    for (int k = 0; k < a_cols; k++)
+      for (int j = 0; j < b_cols; j++) {
         C[i][j] += A[i][k] * B[k][j];
     }
   }

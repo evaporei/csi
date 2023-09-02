@@ -125,3 +125,15 @@ Ir__________________ I1mr_________ ILmr_________ Dr__________________ D1mr______
     133,654   (0.0%) 1,047 (98.2%) 1,040 (98.3%)      30,670   (0.0%) 1,161 (99.5%) 1,035 (99.4%)     10,533   (0.0%)        324   (0.0%)       316   (0.0%)  unannotated: files known & below threshold
         111   (0.0%)    16  (1.5%)    15  (1.4%)          27   (0.0%)     4  (0.3%)     4  (0.4%)         13   (0.0%)          1   (0.0%)         1   (0.0%)  unannotated: files unknown
 ```
+
+## matrix-multiply
+
+Command to benchmark: `cc -Wall matrix-multiply.c benchmark.c && ./a.out 1000`.
+
+Swapping two internal loops (`j` and `k`):
+
+```bash
+Naive: 3.575s
+Fast: 2.300s
+1.55x speedup
+```

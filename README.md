@@ -16,3 +16,4 @@
   - Exceptional Control Flow https://github.com/evaporei/snowshell
 - Computer Networks
   - The Big Picture: Layers of Protocols [exercises](./comp-networks/overview)
+  - The Domain Name System [exercises](./comp-networks/dns-client)

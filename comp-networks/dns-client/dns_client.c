@@ -82,13 +82,18 @@ void format_name(unsigned char *reader, unsigned char *buffer) {
     free(name);
 }
 
-int main(void) {
+int main(int argc, char **argv) {
     int sockfd;
     struct sockaddr_in server_addr;
     char buffer[BUFFER_SIZE];
     struct DNS_HEADER *dns_header;
     struct QUESTION *question;
     char *qname;
+
+    if (argc != 2) {
+        fprintf(stderr, "usage: dns-client www.google.com\n");
+        return 1;
+    }
 
     // Create socket
     sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -113,7 +118,7 @@ int main(void) {
     qname = (char *)(dns_header + 1); // Pointing just after the DNS header
 
     // Convert "www.example.com" into "3www7example3com0"
-    char domain[] = "www.example.com";
+    char *domain = argv[1];
     char *token = strtok(domain, ".");
     while (token != NULL) {
         size_t len = strlen(token);
@@ -174,6 +179,7 @@ int main(void) {
         r_data = (struct R_DATA *)qname;
         qname += sizeof(struct R_DATA);
 
+        // segfault
         if (ntohs(r_data->rtype) == 1) { // A record
             struct in_addr addr;
             memcpy(&addr, qname, sizeof(addr));

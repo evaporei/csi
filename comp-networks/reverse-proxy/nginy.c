@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <assert.h>
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -7,18 +8,26 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define PORT "8080"
 #define BACKLOG -1
 #define BUF_SIZE 1024
 
+static volatile int sockfd = 0;
+
+void int_handler(int dummy) {
+    // 0 = let sends finish, receives are disallowed
+    shutdown(sockfd, 0);
+}
+
 int main(void) {
     struct sockaddr_storage their_addr;
     socklen_t addr_size;
     struct addrinfo hints, *res;
     char buf[BUF_SIZE] = {0};
-    int status, sockfd, new_fd, bytes_read, bytes_sent;
+    int status, new_fd, bytes_read, bytes_sent;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6
@@ -47,9 +56,15 @@ int main(void) {
         return 1;
     }
 
+    signal(SIGINT, int_handler);
+
     addr_size = sizeof(their_addr);
     while (true) {
         if ((new_fd = accept(sockfd, (struct sockaddr *) &their_addr, &addr_size)) < 0) {
+            if (errno == EBADF || errno == EINVAL) {
+                // shutdown happened via signal
+                return 0;
+            }
             perror("accept failed");
             return 1;
         }
@@ -82,9 +97,6 @@ int main(void) {
 close_client:
         close(new_fd);
     }
-
-    // 0 = let sends finish, receives are disallowed
-    shutdown(sockfd, 0);
 
     return 0;
 }

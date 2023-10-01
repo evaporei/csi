@@ -15,8 +15,8 @@
   - The Memory Hierarchy 2 [exercises](./intro-systems/memory-hierarchy-2)
   - Exceptional Control Flow https://github.com/evaporei/snowshell
 - Computer Networks
-  - The Big Picture: Layers of Protocols [exercises](./comp-networks/overview)
-  - The Domain Name System [exercises](./comp-networks/dns-client)
-  - Web Protocols [exercises](./comp-networks/reverse-proxy)
+  - The Big Picture: Layers of Protocols [exercises](./networks/overview)
+  - The Domain Name System [exercises](./networks/dns-client)
+  - Web Protocols [exercises](./networks/reverse-proxy)
   - Reliable Data Delivery (didn't do the exercise yet)
-  - Routing [exercises](./comp-networks/traceroute)
+  - Routing [exercises](./networks/traceroute)

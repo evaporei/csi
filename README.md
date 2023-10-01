@@ -19,3 +19,4 @@
   - The Domain Name System [exercises](./comp-networks/dns-client)
   - Web Protocols [exercises](./comp-networks/reverse-proxy)
   - Reliable Data Delivery (didn't do the exercise yet)
+  - Routing [exercises](./comp-networks/traceroute)

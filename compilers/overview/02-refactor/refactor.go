@@ -1,11 +1,14 @@
 package main
 
 import (
-	"log"
-	"os"
+    "bytes"
+    // "fmt"
+    "log"
+    "os"
 
-	"github.com/dave/dst"
-	"github.com/dave/dst/decorator"
+    "github.com/dave/dst"
+    "github.com/dave/dst/decorator"
+    // "github.com/dave/dst/dstutil"
 )
 
 const src string = `package foo
@@ -30,8 +33,18 @@ func bar() {
 // Moves all top-level functions to the end, sorted in alphabetical order.
 // The "source file" is given as a string (rather than e.g. a filename).
 func SortFunctions(src string) (string, error) {
-	// TODO
-	return src, nil
+    f, err := decorator.Parse(src)
+    if err != nil {
+        return "", err
+    }
+
+    out := bytes.NewBuffer(nil)
+    err = decorator.Fprint(out, f)
+    if err != nil {
+        return "", err
+    }
+
+	return out.String(), nil
 }
 
 func main() {

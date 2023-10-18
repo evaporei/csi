@@ -1,14 +1,15 @@
 package main
 
 import (
-    "bytes"
-    // "fmt"
-    "log"
-    "os"
+	"bytes"
+	// "fmt"
+	"log"
+	"os"
+    // "strings"
 
-    "github.com/dave/dst"
-    "github.com/dave/dst/decorator"
-    // "github.com/dave/dst/dstutil"
+	"github.com/dave/dst"
+	"github.com/dave/dst/decorator"
+	// "github.com/dave/dst/dstutil"
 )
 
 const src string = `package foo
@@ -37,6 +38,25 @@ func SortFunctions(src string) (string, error) {
     if err != nil {
         return "", err
     }
+
+    fns := make([]*dst.Decl, 0)
+    idxs := make([]int, 0)
+
+    for i, decl := range f.Decls {
+        if _, ok := decl.(*dst.FuncDecl); ok {
+            fns = append(fns, &decl)
+            idxs = append(idxs, i)
+        }
+    }
+
+    for _, idx := range idxs {
+        // https://stackoverflow.com/questions/37334119/how-to-delete-an-element-from-a-slice-in-golang
+        f.Decls = append(f.Decls[:idx], f.Decls[idx+1:]...)
+    }
+
+    // for _, fn := range fns {
+    //     f.Decls = append(f.Decls, fn)
+    // }
 
     out := bytes.NewBuffer(nil)
     err = decorator.Fprint(out, f)

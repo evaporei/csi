@@ -29,6 +29,8 @@ func TestSortFunctions(t *testing.T) {
 			t.Fatal(err)
 		}
 
+        // fmt.Println("actual:", actual)
+        // fmt.Println("expected:", string(expected))
 		if actual != string(expected) {
 			t.Fatalf("Bad output for test case %d\n", i)
 		}

@@ -20,6 +20,34 @@ func Evaluate(expr ast.Expr) (int, error) {
         return strconv.Atoi(basicLit.Value)
     }
 
+    if binExpr, ok := expr.(*ast.BinaryExpr); ok {
+        x, err := Evaluate(binExpr.X)
+        if err != nil {
+            return 0, err
+        }
+
+        y, err := Evaluate(binExpr.Y)
+        if err != nil {
+            return 0, err
+        }
+
+        if binExpr.Op == token.ADD {
+            return x + y, nil
+        }
+
+        if binExpr.Op == token.SUB {
+            return x - y, nil
+        }
+
+        if binExpr.Op == token.MUL {
+            return x * y, nil
+        }
+
+        if binExpr.Op == token.QUO {
+            return x / y, nil
+        }
+    }
+
 	return 0, nil
 }
 

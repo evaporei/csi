@@ -5,7 +5,8 @@ import (
 	// "fmt"
 	"log"
 	"os"
-    // "strings"
+	"strings"
+	"sort"
 
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
@@ -39,24 +40,39 @@ func SortFunctions(src string) (string, error) {
         return "", err
     }
 
-    fns := make([]*dst.Decl, 0)
+    fns := make([]dst.Decl, 0)
     idxs := make([]int, 0)
 
     for i, decl := range f.Decls {
         if _, ok := decl.(*dst.FuncDecl); ok {
-            fns = append(fns, &decl)
+            fns = append(fns, dst.Clone(decl).(dst.Decl))
             idxs = append(idxs, i)
         }
     }
 
+    c := 0
     for _, idx := range idxs {
         // https://stackoverflow.com/questions/37334119/how-to-delete-an-element-from-a-slice-in-golang
-        f.Decls = append(f.Decls[:idx], f.Decls[idx+1:]...)
+        f.Decls = append(f.Decls[:idx - c], f.Decls[idx+1 - c:]...)
+        c += 1
     }
 
-    // for _, fn := range fns {
-    //     f.Decls = append(f.Decls, fn)
-    // }
+    sort.SliceStable(fns, func(i, j int) bool {
+        fn1 := fns[i].(*dst.FuncDecl)
+        fn2 := fns[j].(*dst.FuncDecl)
+        res := strings.Compare(fn1.Name.Name, fn2.Name.Name)
+        if res == 1 {
+            return false
+        }
+        if res == -1 {
+            return true
+        }
+        return false
+    })
+
+    for _, fn := range fns {
+        f.Decls = append(f.Decls, fn)
+    }
 
     out := bytes.NewBuffer(nil)
     err = decorator.Fprint(out, f)

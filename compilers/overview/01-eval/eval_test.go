@@ -13,6 +13,7 @@ func TestEvaluate(t *testing.T) {
 		{"5", 5},
 		{"1 + 1", 2},
 		{"1 + 2 - 3 * 4", -9},
+		{"4 * (5 + 6)", 44},
 		{"2 * (3 - 4 * (5 + 6) + 7)", -68},
 	} {
 		expr, err := parser.ParseExpr(test.s)

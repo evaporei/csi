@@ -15,8 +15,12 @@ func compile(fn *ast.FuncDecl) (string, error) {
     for _, stmt := range fn.Body.List {
         if ret, ok := stmt.(*ast.ReturnStmt); ok {
             expr := ret.Results[0]
-            if basicLit, ok := expr.(*ast.BasicLit); ok {
-                return "pushi " + basicLit.Value, nil
+            if len(ret.Results) == 1 {
+                if basicLit, ok := expr.(*ast.BasicLit); ok {
+                    return "pushi " + basicLit.Value + `
+                    pop 0
+                    halt`, nil
+                }
             }
         }
     }

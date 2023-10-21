@@ -12,18 +12,16 @@ import (
 // be read from memory addresses `1` and `2`, and the return value
 // should be written to memory address `0`.
 func compile(fn *ast.FuncDecl) (string, error) {
+    out := ""
     for _, stmt := range fn.Body.List {
         if ret, ok := stmt.(*ast.ReturnStmt); ok {
             expr := ret.Results[0]
-            if len(ret.Results) == 1 {
-                if basicLit, ok := expr.(*ast.BasicLit); ok {
-                    return "pushi " + basicLit.Value + `
-                    pop 0
-                    halt`, nil
-                }
+            if basicLit, ok := expr.(*ast.BasicLit); ok {
+                out += "pushi " + basicLit.Value + `
+                pop 0`
             }
         }
     }
-	// TODO
-	return "halt\n", nil
+
+	return out + "\nhalt\n", nil
 }

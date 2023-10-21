@@ -11,7 +11,15 @@ import (
 // Recall from the README that the input parameters `x` and `y` should
 // be read from memory addresses `1` and `2`, and the return value
 // should be written to memory address `0`.
-func compile(node *ast.FuncDecl) (string, error) {
+func compile(fn *ast.FuncDecl) (string, error) {
+    for _, stmt := range fn.Body.List {
+        if ret, ok := stmt.(*ast.ReturnStmt); ok {
+            expr := ret.Results[0]
+            if basicLit, ok := expr.(*ast.BasicLit); ok {
+                return "pushi " + basicLit.Value, nil
+            }
+        }
+    }
 	// TODO
 	return "halt\n", nil
 }

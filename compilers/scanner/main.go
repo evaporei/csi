@@ -9,6 +9,17 @@ import (
 	"github.com/evaporei/interpreter/scanner"
 )
 
+var hadError bool = false
+
+func fail(line int, msg string) {
+    report(line, "", msg)
+}
+
+func report(line int, where, msg string) {
+    fmt.Fprintf(os.Stderr, "[line %d] Error %s: %s", line, where, msg)
+    hadError = true
+}
+
 func check(e error) {
     if e != nil {
         panic(e)
@@ -30,6 +41,10 @@ func runFile(file string) {
 
     contents := string(bytes)
     run(contents)
+
+    if hadError {
+        os.Exit(65)
+    }
 }
 
 func runPrompt() {

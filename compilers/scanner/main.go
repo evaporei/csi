@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/evaporei/interpreter/scanner"
 )
 
 func check(e error) {
@@ -14,7 +16,12 @@ func check(e error) {
 }
 
 func run(src string) {
-    fmt.Println(src)
+    s := scanner.New(src)
+    tokens := s.ScanTokens()
+
+    for _, token := range tokens {
+        fmt.Println(token)
+    }
 }
 
 func runFile(file string) {

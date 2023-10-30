@@ -7,18 +7,8 @@ import (
 	"strings"
 
 	"github.com/evaporei/interpreter/scanner"
+	e "github.com/evaporei/interpreter/error"
 )
-
-var hadError bool = false
-
-func fail(line int, msg string) {
-    report(line, "", msg)
-}
-
-func report(line int, where, msg string) {
-    fmt.Fprintf(os.Stderr, "[line %d] Error %s: %s", line, where, msg)
-    hadError = true
-}
 
 func check(e error) {
     if e != nil {
@@ -42,7 +32,7 @@ func runFile(file string) {
     contents := string(bytes)
     run(contents)
 
-    if hadError {
+    if e.HadError {
         os.Exit(65)
     }
 }

@@ -108,11 +108,11 @@ func (s *Scanner) term() {
     }
 
     text := string(s.src[s.start:s.curr])
-    if _, ok := keywords[text]; ok {
-        typ = t.Term
+    if typ, ok := keywords[text]; ok {
+        s.addToken(typ, nil)
+    } else {
+        s.addToken(t.Term, nil)
     }
-
-    s.addToken(typ, nil)
 }
 
 func isDigit(c rune) bool {

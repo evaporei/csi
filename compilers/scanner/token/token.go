@@ -38,6 +38,8 @@ func (tt TokenType) String() string {
         return "OR"
     case Not:
         return "NOT"
+    case Eof:
+        return "EOF"
     }
     panic("tried to convert non-TokenType to string")
 }

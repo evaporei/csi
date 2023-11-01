@@ -1,0 +1,23 @@
+expression -> term
+            | unary
+            | binary
+unary      -> "NOT" expression
+binary     -> expression operator expression
+operator   -> "AND" | "OR"
+term       -> STRING
+
+-- examples:
+
+hello
+term
+
+hello AND world
+binary
+exp op exp
+term op term
+
+hello AND world OR alice
+binary op term
+
+hello AND world OR alice AND NOT bob
+binary op term op unary

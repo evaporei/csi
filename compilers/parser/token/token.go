@@ -45,15 +45,16 @@ func (tt TokenType) String() string {
 }
 
 type Token struct {
-    typ TokenType
+    Typ TokenType
     lexeme string
-    literal any
+    Literal any
     line int
 }
 
 func New(typ TokenType, lexeme string, literal any, line int) *Token {
+    Typ := typ
     return &Token {
-        typ,
+        Typ,
         lexeme,
         literal,
         line,
@@ -61,5 +62,5 @@ func New(typ TokenType, lexeme string, literal any, line int) *Token {
 }
 
 func (t *Token) String() string {
-    return fmt.Sprintf("%s %s %s", t.typ.String(), t.lexeme, t.literal)
+    return fmt.Sprintf("%s %s %s", t.Typ.String(), t.lexeme, t.Literal)
 }

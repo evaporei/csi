@@ -21,25 +21,33 @@ void matrix_multiply(double **C, double **A, double **B, int a_rows, int a_cols,
 
 struct ParallelData {
     double **c, **a, **b;
-    int a_rows, a_cols, b_cols;
+    int a_cols, b_cols;
 };
+
+// AAAA I HATE THIS, HOW IS THIS NOT A PROBLEM??
+int step_i = 0;
 
 void *parallel_cb(void *ptr) {
     struct ParallelData *d = (struct ParallelData*) ptr;
+    int i = step_i++;
+    /* int i = d->i; */
+    /* printf("after i: %d\n", i); */
     
-    for (int i = 0; i < d->a_rows; i++) {
-        for (int j = 0; j < d->b_cols; j++) {
-            d->c[i][j] = 0;
-            for (int k = 0; k < d->a_cols; k++)
-                d->c[i][j] += d->a[i][k] * d->b[k][j];
-        }
+    for (int j = 0; j < d->b_cols; j++) {
+        for (int k = 0; k < d->a_cols; k++)
+            d->c[i][j] += d->a[i][k] * d->b[k][j];
     }
 }
 
 void parallel_matrix_multiply(double **c, double **a, double **b, int a_rows,
                           int a_cols, int b_cols) {
-    pthread_t thread1;
-    int iret1;
+    for (int i = 0; i < a_rows; i++) {
+        for (int j = 0; j < b_cols; j++) {
+            c[i][j] = 0;
+        }
+    }
+    pthread_t threads[a_rows];
+    int iret;
 
     struct ParallelData data;
 
@@ -47,10 +55,16 @@ void parallel_matrix_multiply(double **c, double **a, double **b, int a_rows,
     data.a = a;
     data.b = b;
 
-    data.a_rows = a_rows;
     data.a_cols = a_cols;
     data.b_cols = b_cols;
 
-    iret1 = pthread_create(&thread1, NULL, parallel_cb, (void*) &data);
-    pthread_join(thread1, NULL);
+    for (int i = 0; i < a_rows; i++) {
+        /* data.i = i; */
+        /* printf("before i: %d\n", i); */
+        iret = pthread_create(&threads[i], NULL, parallel_cb, (void*) &data);
+    }
+
+    for (int i = 0; i < a_rows; i++) {
+        pthread_join(threads[i], NULL);
+    }
 }

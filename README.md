@@ -25,3 +25,4 @@
   - Scanning [exercises](./langs-systems/scanner)
   - Parsing [exercises](./langs-systems/parser)
   - New keyword to CPython https://github.com/evaporei/cpython/commits/until-keyword
+  - Threads, Shared Memory, and Parallelism [exercises](./langs-systems/threads)

@@ -20,8 +20,8 @@
   - Web Protocols [exercises](./networks/reverse-proxy)
   - Reliable Data Delivery (didn't do the exercise yet)
   - Routing [exercises](./networks/traceroute)
-- Compilers
-  - Overview [exercises](./compilers/overview)
-  - Scanning [exercises](./compilers/scanner)
-  - Parsing [exercises](./compilers/parser)
+- Languages and Systems Programming
+  - Overview [exercises](./langs-systems/overview)
+  - Scanning [exercises](./langs-systems/scanner)
+  - Parsing [exercises](./langs-systems/parser)
   - New keyword to CPython https://github.com/evaporei/cpython/commits/until-keyword

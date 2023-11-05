@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
+	"go/token"
 )
 
 // Given an AST node corresponding to a function (guaranteed to be
@@ -17,11 +19,52 @@ func compile(fn *ast.FuncDecl) (string, error) {
         if ret, ok := stmt.(*ast.ReturnStmt); ok {
             expr := ret.Results[0]
             if basicLit, ok := expr.(*ast.BasicLit); ok {
-                out += "pushi " + basicLit.Value + `
-                pop 0`
+                out += "pushi " + basicLit.Value + "\n"
+                out += "pop 0\n"
+            }
+            if binExpr, ok := expr.(*ast.BinaryExpr); ok {
+                if ident, ok := binExpr.X.(*ast.Ident); ok {
+                    if ident.Name == "x" {
+                        out += "pop 1\n"
+                    }
+                    if ident.Name == "x" {
+                        out += "pop 2\n"
+                    }
+                }
+
+                if binExpr.Op == token.ADD {
+                    out += "add\n"
+                }
+
+                if binExpr.Op == token.SUB {
+                    out += "sub\n"
+                }
+
+                if binExpr.Op == token.MUL {
+                    out += "mul\n"
+                }
+
+                if binExpr.Op == token.QUO {
+                    out += "div\n"
+                }
+
+                if ident, ok := binExpr.Y.(*ast.Ident); ok {
+                    if ident.Name == "x" {
+                        out += "pop 1\n"
+                    }
+                    if ident.Name == "x" {
+                        out += "pop 2\n"
+                    }
+                }
+
+                out += "pop 1\n"
             }
         }
     }
 
-	return out + "\nhalt\n", nil
+    out += "halt\n"
+
+    fmt.Println(out)
+
+	return out, nil
 }

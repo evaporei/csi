@@ -1,0 +1,18 @@
+package foo
+
+import (
+	"fmt"
+	"time"
+)
+
+type A int
+
+const b = "testing"
+
+func bar() {
+	fmt.Println(time.Now())
+}
+
+func baz() {
+	fmt.Println("Hello, world!")
+}

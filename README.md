@@ -26,3 +26,5 @@
   - Parsing [exercises](./langs-systems/parser)
   - New keyword to CPython https://github.com/evaporei/cpython/commits/until-keyword
   - Threads, Shared Memory, and Parallelism [exercises](./langs-systems/threads)
+  - Concurrency and Memory Models (didn't do the exercise yet)
+  - Garbage Collection https://github.com/evaporei/gc

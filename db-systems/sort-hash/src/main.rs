@@ -99,16 +99,32 @@ fn main() {
     let query = fs::read_to_string("query.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
-    dbg!(query);
+    let mut results = vec![];
 
-    let lines = read_lines("./ml-20m/movies.csv").unwrap().skip(1);
-    let mut movies = vec![];
+    if let Some(tables) = query.scan {
+        for table in tables {
+            let mut rows = vec![];
+            let lines = read_lines(format!("./ml-20m/{table}.csv")).unwrap().skip(1);
 
-    for line in lines {
-        let line = line.unwrap();
-        // println!("{line}");
-        let movie = Movie::from(line);
-        // println!("{movie:?}");
-        movies.push(movie);
+            for line in lines {
+                let line = line.unwrap();
+                rows.push(line);
+            }
+            results.push(rows);
+        }
     }
+
+    println!("results:");
+    println!("{results:?}");
+
+    // let lines = read_lines("./ml-20m/movies.csv").unwrap().skip(1);
+    // let mut movies = vec![];
+    //
+    // for line in lines {
+    //     let line = line.unwrap();
+    //     // println!("{line}");
+    //     let movie = Movie::from(line);
+    //     // println!("{movie:?}");
+    //     movies.push(movie);
+    // }
 }

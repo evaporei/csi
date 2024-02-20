@@ -1,0 +1,5 @@
+[
+  ["PROJECTION", ["name"]],
+  ["SELECTION", ["id", "EQUALS", "5000"]],
+  ["SCAN", ["movies"]]
+]

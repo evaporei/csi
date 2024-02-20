@@ -130,13 +130,26 @@ impl From<Value> for Query {
     }
 }
 
-fn main() {
-    let query = fs::read_to_string("query.json").unwrap();
-    let json: Value = serde_json::from_str(&query).unwrap();
-    let query = Query::from(json);
-    let mut results = vec![];
+trait Operation {
+    fn new(query: &Query) -> Self;
+    fn execute(self) -> Option<Vec<Vec<MovieView>>>;
+}
 
-    if let Some(tables) = query.scan {
+struct Scan {
+    tables: Option<Parts>,
+}
+
+impl Operation for Scan {
+    fn new(query: &Query) -> Self {
+        Self {
+            tables: query.scan.clone(),
+        }
+    }
+
+    fn execute(self) -> Option<Vec<Vec<MovieView>>> {
+        let tables = self.tables?;
+        let mut results = vec![];
+
         for table in tables {
             let mut rows = vec![];
             let lines = read_lines(format!("./ml-20m/{table}.csv")).unwrap().skip(1);
@@ -149,7 +162,18 @@ fn main() {
             }
             results.push(rows);
         }
+
+        Some(results)
     }
+}
+
+fn main() {
+    let query = fs::read_to_string("query.json").unwrap();
+    let json: Value = serde_json::from_str(&query).unwrap();
+    let query = Query::from(json);
+
+    let scan = Scan::new(&query);
+    let mut results = scan.execute().unwrap();
 
     if let Some(conditions) = query.selection {
         if conditions[1] == "EQUALS" {

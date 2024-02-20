@@ -108,23 +108,17 @@ fn main() {
 
             for line in lines {
                 let line = line.unwrap();
-                rows.push(line);
+                // TODO: we don't know table structure at compile-time
+                let movie = Movie::from(line);
+                rows.push(movie);
             }
             results.push(rows);
         }
     }
 
+    if let Some(conditions) = query.projection {
+    }
+
     println!("results:");
     println!("{results:?}");
-
-    // let lines = read_lines("./ml-20m/movies.csv").unwrap().skip(1);
-    // let mut movies = vec![];
-    //
-    // for line in lines {
-    //     let line = line.unwrap();
-    //     // println!("{line}");
-    //     let movie = Movie::from(line);
-    //     // println!("{movie:?}");
-    //     movies.push(movie);
-    // }
 }

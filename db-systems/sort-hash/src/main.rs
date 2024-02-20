@@ -116,7 +116,18 @@ fn main() {
         }
     }
 
-    if let Some(conditions) = query.projection {
+    if let Some(conditions) = query.selection {
+        if conditions[1] == "EQUALS" {
+            if conditions[0] == "id" {
+                results[0].retain(|m| m.id == conditions[2].parse::<usize>().unwrap());
+            }
+            if conditions[0] == "title" {
+                results[0].retain(|m| m.title == conditions[2]);
+            }
+            if conditions[0] == "genres" {
+                results[0].retain(|m| m.genres.contains(&conditions[2]));
+            }
+        }
     }
 
     println!("results:");

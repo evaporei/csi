@@ -42,6 +42,41 @@ impl From<String> for Movie {
     }
 }
 
+#[derive(Debug)]
+struct MovieView {
+    id: Option<usize>,
+    title: Option<String>,
+    genres: Option<BTreeSet<Genre>>,
+}
+
+impl From<Movie> for MovieView {
+    fn from(m: Movie) -> Self {
+        Self {
+            id: Some(m.id),
+            title: Some(m.title),
+            genres: Some(m.genres),
+        }
+    }
+}
+
+use std::fmt;
+
+impl fmt::Display for MovieView {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{")?;
+        if let Some(id) = self.id {
+            write!(f, "{id}, ")?;
+        }
+        if let Some(title) = &self.title {
+            write!(f, "{title}, ")?;
+        }
+        if let Some(genres) = &self.genres {
+            write!(f, "{genres:?}, ")?;
+        }
+        write!(f, "}}")
+    }
+}
+
 type Parts = Vec<String>;
 
 #[derive(Debug, Default)]
@@ -110,7 +145,7 @@ fn main() {
                 let line = line.unwrap();
                 // TODO: we don't know table structure at compile-time
                 let movie = Movie::from(line);
-                rows.push(movie);
+                rows.push(MovieView::from(movie));
             }
             results.push(rows);
         }
@@ -119,17 +154,45 @@ fn main() {
     if let Some(conditions) = query.selection {
         if conditions[1] == "EQUALS" {
             if conditions[0] == "id" {
-                results[0].retain(|m| m.id == conditions[2].parse::<usize>().unwrap());
+                results[0].retain(|m| m.id.unwrap() == conditions[2].parse::<usize>().unwrap());
             }
             if conditions[0] == "title" {
-                results[0].retain(|m| m.title == conditions[2]);
+                results[0].retain(|m| m.title.as_ref().unwrap() == &conditions[2]);
             }
             if conditions[0] == "genres" {
-                results[0].retain(|m| m.genres.contains(&conditions[2]));
+                results[0].retain(|m| m.genres.as_ref().unwrap().contains(&conditions[2]));
+            }
+        }
+    }
+
+    if let Some(attributes) = query.projection {
+        // this is ridiculous...
+        if !attributes.contains(&"id".to_owned()) {
+            for table in results.iter_mut() {
+                for movie in table {
+                    movie.id = None;
+                }
+            }
+        }
+        // this is ridiculous...
+        if !attributes.contains(&"title".to_owned()) {
+            for table in results.iter_mut() {
+                for movie in table {
+                    movie.title = None;
+                }
+            }
+        }
+        // this is ridiculous...
+        if !attributes.contains(&"genres".to_owned()) {
+            for table in results.iter_mut() {
+                for movie in table {
+                    movie.genres = None;
+                }
             }
         }
     }
 
     println!("results:");
     println!("{results:?}");
+    // println!("{results}"); // oh fuck Vec doesn't impl fmt::Display
 }

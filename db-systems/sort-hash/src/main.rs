@@ -253,14 +253,13 @@ fn main() {
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 
-    let scan = Scan::new(&query, vec![]);
-    let results = scan.execute().unwrap();
-
-    let selection = Selection::new(&query, results);
-    let results = selection.execute().unwrap();
-
-    let projection = Projection::new(&query, results);
-    let results = projection.execute().unwrap();
+    // funny API, but safe and "composable"
+    let results = Scan::new(&query, vec![])
+        .execute()
+        .map(|res| Selection::new(&query, res).execute())
+        .flatten()
+        .map(|res| Projection::new(&query, res).execute())
+        .flatten();
 
     println!("results:");
     println!("{results:?}");

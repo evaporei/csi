@@ -131,24 +131,26 @@ impl From<Value> for Query {
 }
 
 trait Operation {
-    fn new(query: &Query) -> Self;
+    fn new(query: &Query, input: Vec<Vec<MovieView>>) -> Self;
     fn execute(self) -> Option<Vec<Vec<MovieView>>>;
 }
 
 struct Scan {
     tables: Option<Parts>,
+    input: Vec<Vec<MovieView>>,
 }
 
 impl Operation for Scan {
-    fn new(query: &Query) -> Self {
+    fn new(query: &Query, input: Vec<Vec<MovieView>>) -> Self {
         Self {
             tables: query.scan.clone(),
+            input,
         }
     }
 
     fn execute(self) -> Option<Vec<Vec<MovieView>>> {
         let tables = self.tables?;
-        let mut results = vec![];
+        let mut results = self.input;
 
         for table in tables {
             let mut rows = vec![];
@@ -167,15 +169,23 @@ impl Operation for Scan {
     }
 }
 
-fn main() {
-    let query = fs::read_to_string("query.json").unwrap();
-    let json: Value = serde_json::from_str(&query).unwrap();
-    let query = Query::from(json);
+struct Selection {
+    conditions: Option<Parts>,
+    input: Vec<Vec<MovieView>>,
+}
 
-    let scan = Scan::new(&query);
-    let mut results = scan.execute().unwrap();
+impl Operation for Selection {
+    fn new(query: &Query, input: Vec<Vec<MovieView>>) -> Self {
+        Self {
+            conditions: query.selection.clone(),
+            input,
+        }
+    }
 
-    if let Some(conditions) = query.selection {
+    fn execute(self) -> Option<Vec<Vec<MovieView>>> {
+        let conditions = self.conditions?;
+        let mut results = self.input;
+
         if conditions[1] == "EQUALS" {
             if conditions[0] == "id" {
                 results[0].retain(|m| m.id.unwrap() == conditions[2].parse::<usize>().unwrap());
@@ -187,7 +197,21 @@ fn main() {
                 results[0].retain(|m| m.genres.as_ref().unwrap().contains(&conditions[2]));
             }
         }
+
+        Some(results)
     }
+}
+
+fn main() {
+    let query = fs::read_to_string("query.json").unwrap();
+    let json: Value = serde_json::from_str(&query).unwrap();
+    let query = Query::from(json);
+
+    let scan = Scan::new(&query, vec![]);
+    let results = scan.execute().unwrap();
+
+    let selection = Selection::new(&query, results);
+    let mut results = selection.execute().unwrap();
 
     if let Some(attributes) = query.projection {
         // this is ridiculous...

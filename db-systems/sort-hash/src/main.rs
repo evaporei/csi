@@ -202,18 +202,23 @@ impl Operation for Selection {
     }
 }
 
-fn main() {
-    let query = fs::read_to_string("query.json").unwrap();
-    let json: Value = serde_json::from_str(&query).unwrap();
-    let query = Query::from(json);
+struct Projection {
+    fields: Option<Parts>,
+    input: Vec<Vec<MovieView>>,
+}
 
-    let scan = Scan::new(&query, vec![]);
-    let results = scan.execute().unwrap();
+impl Operation for Projection {
+    fn new(query: &Query, input: Vec<Vec<MovieView>>) -> Self {
+        Self {
+            fields: query.projection.clone(),
+            input,
+        }
+    }
 
-    let selection = Selection::new(&query, results);
-    let mut results = selection.execute().unwrap();
+    fn execute(self) -> Option<Vec<Vec<MovieView>>> {
+        let attributes = self.fields?;
+        let mut results = self.input;
 
-    if let Some(attributes) = query.projection {
         // this is ridiculous...
         if !attributes.contains(&"id".to_owned()) {
             for table in results.iter_mut() {
@@ -238,7 +243,24 @@ fn main() {
                 }
             }
         }
+
+        Some(results)
     }
+}
+
+fn main() {
+    let query = fs::read_to_string("query.json").unwrap();
+    let json: Value = serde_json::from_str(&query).unwrap();
+    let query = Query::from(json);
+
+    let scan = Scan::new(&query, vec![]);
+    let results = scan.execute().unwrap();
+
+    let selection = Selection::new(&query, results);
+    let results = selection.execute().unwrap();
+
+    let projection = Projection::new(&query, results);
+    let results = projection.execute().unwrap();
 
     println!("results:");
     println!("{results:?}");

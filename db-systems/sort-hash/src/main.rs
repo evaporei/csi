@@ -148,20 +148,29 @@ impl<'a> Iterator for Projector<'a> {
             return Some(row);
         }
 
-        let mut filtered = Vec::with_capacity(row.len());
-        for field in &self.projection {
-            let idx = self
-                .schema
-                .fields
-                .iter()
-                .position(|f| f == field)
-                .expect(&format!(
-                    "'{field}' field not found in table '{}'",
-                    self.schema.table
-                ));
-            filtered.push(row[idx].clone());
-        }
-        Some(filtered)
+        let idxs: Vec<_> = self
+            .projection
+            .iter()
+            .map(|p| {
+                self.schema
+                    .fields
+                    .iter()
+                    .position(|f| f == p)
+                    // we can remove later if we want silent filter (if not found)
+                    // which can be useful once we have multiple scanners (multi-table queries)
+                    .expect(&format!(
+                        "'{p}' field not found in table '{}'",
+                        self.schema.table
+                    ))
+            })
+            .collect();
+        Some(
+            row.into_iter()
+                .enumerate()
+                .filter(|(i, _)| idxs.contains(i))
+                .map(|(_, s)| s)
+                .collect(),
+        )
     }
 }
 

@@ -66,14 +66,20 @@ impl From<Value> for Query {
 use std::iter::Skip;
 
 struct FileScan {
+    table: String,
     lines: Skip<io::Lines<io::BufReader<File>>>,
 }
 
 impl FileScan {
     fn new(table: &str) -> Self {
         Self {
+            table: table.to_owned(),
             lines: read_lines(format!("./ml-20m/{table}.csv")).unwrap().skip(1),
         }
+    }
+
+    fn table(&self) -> &str {
+        &self.table
     }
 }
 
@@ -90,24 +96,94 @@ impl Iterator for FileScan {
     }
 }
 
+struct Schema {
+    table: String,
+    fields: Vec<String>,
+}
+
+impl Schema {
+    fn new(table: &str) -> Self {
+        Self {
+            // omaga
+            fields: read_lines(format!("./ml-20m/{table}.csv"))
+                .unwrap()
+                .next()
+                .expect("at least one line in file (the schema)")
+                .unwrap()
+                .split(',')
+                .map(|s| s.to_owned())
+                .collect(),
+            table: table.to_owned(),
+        }
+    }
+}
+
+struct Projector<'a> {
+    source: &'a mut dyn Iterator<Item = Row>,
+    projection: Vec<String>,
+    schema: Schema,
+}
+
+impl<'a> Projector<'a> {
+    fn new(
+        projection: Vec<String>,
+        source: &'a mut dyn Iterator<Item = Row>,
+        schema: Schema,
+    ) -> Self {
+        Self {
+            source,
+            projection,
+            schema,
+        }
+    }
+}
+
+impl<'a> Iterator for Projector<'a> {
+    type Item = Row;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let row = self.source.next()?;
+
+        if self.projection.is_empty() {
+            return Some(row);
+        }
+
+        let mut filtered = Vec::with_capacity(row.len());
+        for field in &self.projection {
+            let idx = self
+                .schema
+                .fields
+                .iter()
+                .position(|f| f == field)
+                .expect(&format!(
+                    "'{field}' field not found in table '{}'",
+                    self.schema.table
+                ));
+            filtered.push(row[idx].clone());
+        }
+        Some(filtered)
+    }
+}
+
 fn main() {
     let query = fs::read_to_string("query.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 
-    let scan = query.scan.expect("there should be at least one table in the scan list");
-    let mut scanners = vec![];
-    for table in scan {
-        scanners.push(FileScan::new(&table));
-    }
+    let scan = query
+        .scan
+        .expect("there should be at least one table in the scan list");
+    // TODO: multiple scanners
+    let mut scanner = FileScan::new(&scan[0]);
 
-    let mut results = vec![];
-
-    for scanner in scanners {
-        for row in scanner {
-            results.push(row);
+    let results: Vec<_> = match query.projection {
+        Some(projection) => {
+            let schema = Schema::new(scanner.table());
+            let projector = Projector::new(projection, &mut scanner, schema);
+            projector.into_iter().collect()
         }
-    }
+        None => scanner.into_iter().collect(),
+    };
 
     println!("results:");
     println!("{results:?}");

@@ -63,13 +63,6 @@ impl From<Value> for Query {
     }
 }
 
-// Tuple
-type Row = Vec<String>;
-
-trait Operation {
-    fn next(&mut self) -> Option<Row>;
-}
-
 use std::iter::Skip;
 
 struct FileScan {
@@ -84,8 +77,13 @@ impl FileScan {
     }
 }
 
-impl Operation for FileScan {
-    fn next(&mut self) -> Option<Row> {
+// Tuple
+type Row = Vec<String>;
+
+impl Iterator for FileScan {
+    type Item = Row;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let raw = self.lines.next()?.ok()?;
 
         Some(raw.split(',').map(|s| s.to_owned()).collect())
@@ -97,11 +95,11 @@ fn main() {
     let json: Value = serde_json::from_str(&query).unwrap();
     let _query = Query::from(json);
 
-    let mut file = FileScan::new("movies");
+    let file = FileScan::new("movies");
 
     let mut results = vec![];
 
-    while let Some(row) = file.next() {
+    for row in file {
         results.push(row);
     }
 

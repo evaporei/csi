@@ -121,7 +121,7 @@ impl Schema {
 struct Projector<'a> {
     source: &'a mut dyn Iterator<Item = Row>,
     projection: Vec<String>,
-    schema: Schema,
+    idxs: Vec<usize>,
 }
 
 impl<'a> Projector<'a> {
@@ -131,9 +131,23 @@ impl<'a> Projector<'a> {
         schema: Schema,
     ) -> Self {
         Self {
+            idxs: projection
+                .iter()
+                .map(|p| {
+                    schema
+                        .fields
+                        .iter()
+                        .position(|f| f == p)
+                        // we can remove later if we want silent filter (if not found)
+                        // which can be useful once we have multiple scanners (multi-table queries)
+                        .expect(&format!(
+                            "'{p}' field not found in table '{}'",
+                            schema.table
+                        ))
+                })
+                .collect(),
             source,
             projection,
-            schema,
         }
     }
 }
@@ -148,26 +162,10 @@ impl<'a> Iterator for Projector<'a> {
             return Some(row);
         }
 
-        let idxs: Vec<_> = self
-            .projection
-            .iter()
-            .map(|p| {
-                self.schema
-                    .fields
-                    .iter()
-                    .position(|f| f == p)
-                    // we can remove later if we want silent filter (if not found)
-                    // which can be useful once we have multiple scanners (multi-table queries)
-                    .expect(&format!(
-                        "'{p}' field not found in table '{}'",
-                        self.schema.table
-                    ))
-            })
-            .collect();
         Some(
             row.into_iter()
                 .enumerate()
-                .filter(|(i, _)| idxs.contains(i))
+                .filter(|(i, _)| self.idxs.contains(i))
                 .map(|(_, s)| s)
                 .collect(),
         )

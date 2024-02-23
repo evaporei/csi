@@ -93,14 +93,20 @@ impl Iterator for FileScan {
 fn main() {
     let query = fs::read_to_string("query.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
-    let _query = Query::from(json);
+    let query = Query::from(json);
 
-    let file = FileScan::new("movies");
+    let scan = query.scan.expect("there should be at least one table in the scan list");
+    let mut scanners = vec![];
+    for table in scan {
+        scanners.push(FileScan::new(&table));
+    }
 
     let mut results = vec![];
 
-    for row in file {
-        results.push(row);
+    for scanner in scanners {
+        for row in scanner {
+            results.push(row);
+        }
     }
 
     println!("results:");

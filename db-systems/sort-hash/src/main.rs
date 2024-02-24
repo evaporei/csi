@@ -96,6 +96,7 @@ impl Iterator for FileScan {
     }
 }
 
+#[derive(Clone, Debug)]
 struct Schema {
     table: String,
     fields: Vec<String>,
@@ -174,6 +175,69 @@ impl<'a> Iterator for Projector<'a> {
     }
 }
 
+struct Selector<'a> {
+    selection: Vec<String>,
+    source: &'a mut dyn Iterator<Item = Row>,
+    idx: usize,
+    // ugly but it works
+    ran: bool,
+}
+
+impl<'a> Selector<'a> {
+    fn new(
+        selection: Vec<String>,
+        source: &'a mut dyn Iterator<Item = Row>,
+        schema: Schema,
+    ) -> Self {
+        Self {
+            idx: schema
+                .fields
+                .iter()
+                .position(|f| f == &selection[0])
+                // we can remove later if we want silent filter (if not found)
+                // which can be useful once we have multiple scanners (multi-table queries)
+                .expect(&format!(
+                    "'{}' field not found in table '{}'",
+                    selection[0], schema.table
+                )),
+            selection,
+            source,
+            ran: false,
+        }
+    }
+}
+
+impl<'a> Iterator for Selector<'a> {
+    // look at me, I'm different o-o
+    type Item = Vec<Row>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ran {
+            return None;
+        }
+        self.ran = true;
+
+        let mut results = vec![];
+        while let Some(row) = self.source.next() {
+            match &self.selection[1][..] {
+                "EQUALS" => {
+                    if row[self.idx] == self.selection[2] {
+                        results.push(row);
+                    }
+                }
+                _ => {
+                    // TODO: should print only on ::new
+                    println!(
+                        "warn: selection operation '{}' not supported",
+                        self.selection[1]
+                    );
+                }
+            }
+        }
+        Some(results)
+    }
+}
+
 fn main() {
     let query = fs::read_to_string("query.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
@@ -184,14 +248,25 @@ fn main() {
         .expect("there should be at least one table in the scan list");
     // TODO: multiple scanners
     let mut scanner = FileScan::new(&scan[0]);
+    let schema = Schema::new(scanner.table());
 
-    let results: Vec<_> = match query.projection {
-        Some(projection) => {
-            let schema = Schema::new(scanner.table());
+    let results: Vec<Row> = match (query.selection, query.projection) {
+        (Some(selection), Some(projection)) => {
+            let mut selector = Selector::new(selection, &mut scanner, schema.clone())
+                .into_iter()
+                .flatten();
+            let projector = Projector::new(projection, &mut selector, schema);
+            projector.into_iter().collect()
+        }
+        (Some(selection), None) => {
+            let selector = Selector::new(selection, &mut scanner, schema);
+            selector.into_iter().flatten().collect()
+        }
+        (None, Some(projection)) => {
             let projector = Projector::new(projection, &mut scanner, schema);
             projector.into_iter().collect()
         }
-        None => scanner.into_iter().collect(),
+        (None, None) => scanner.into_iter().collect(),
     };
 
     println!("results:");

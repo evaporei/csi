@@ -118,6 +118,8 @@ impl Schema {
     }
 }
 
+/// For now the projection retrieves the fields
+/// in the order of the schema (first line in csv).
 struct Projector<'a> {
     source: &'a mut dyn Iterator<Item = Row>,
     projection: Vec<String>,

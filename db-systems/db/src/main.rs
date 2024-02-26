@@ -1,13 +1,20 @@
 use std::fs::{self, File};
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Seek, SeekFrom};
 use std::path::Path;
+
+fn buf_reader<P>(filename: P) -> io::Result<io::BufReader<File>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file))
+}
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
     P: AsRef<Path>,
 {
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    buf_reader(filename).map(|b| b.lines())
 }
 
 type Parts = Vec<String>;
@@ -63,19 +70,35 @@ impl From<Value> for Query {
     }
 }
 
-use std::iter::Skip;
-
 struct FileScan {
+    offset: usize,
     table: String,
-    lines: Skip<io::Lines<io::BufReader<File>>>,
+    file: io::BufReader<File>,
 }
 
 impl FileScan {
     fn new(table: &str) -> Self {
+        let mut file = buf_reader(format!("./ml-20m/{table}.csv")).unwrap();
+        let mut trash = vec![];
+        let offset = file.read_until(b'\n', &mut trash).unwrap();
+
         Self {
+            offset,
             table: table.to_owned(),
-            lines: read_lines(format!("./ml-20m/{table}.csv")).unwrap().skip(1),
+            file,
         }
+    }
+}
+
+trait Offset: Iterator<Item = Row> {
+    fn offset(&self) -> usize;
+    // move elsewhere
+    fn table(&self) -> &str;
+}
+
+impl Offset for FileScan {
+    fn offset(&self) -> usize {
+        self.offset
     }
 
     fn table(&self) -> &str {
@@ -90,9 +113,22 @@ impl Iterator for FileScan {
     type Item = Row;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let raw = self.lines.next()?.ok()?;
+        let mut raw = vec![];
+        let read = self.file.read_until(b'\n', &mut raw).unwrap();
+        if read == 0 {
+            return None;
+        }
+        self.offset += read;
 
-        Some(raw.split(',').map(|s| s.to_owned()).collect())
+        // TODO: abstract
+        Some(
+            raw.split(|b| *b == b',')
+                .map(|bytes| std::str::from_utf8(bytes))
+                .map(Result::unwrap)
+                .map(|s| s.trim())
+                .map(|s| s.to_owned())
+                .collect(),
+        )
     }
 }
 
@@ -131,7 +167,7 @@ impl<'a> Projector<'a> {
     fn new(
         projection: Vec<String>,
         source: &'a mut dyn Iterator<Item = Row>,
-        schema: Schema,
+        schema: &Schema,
     ) -> Self {
         Self {
             idxs: projection
@@ -187,7 +223,7 @@ impl<'a> Selector<'a> {
     fn new(
         selection: Vec<String>,
         source: &'a mut dyn Iterator<Item = Row>,
-        schema: Schema,
+        schema: &Schema,
     ) -> Self {
         Self {
             idx: schema
@@ -238,6 +274,84 @@ impl<'a> Iterator for Selector<'a> {
     }
 }
 
+type Field = String;
+
+struct IndexBuilder<'a> {
+    source: &'a mut dyn Offset,
+    idx: usize,
+    ran: bool,
+}
+
+impl<'a> IndexBuilder<'a> {
+    fn new(field: &str, source: &'a mut dyn Offset, schema: &Schema) -> Self {
+        Self {
+            idx: schema
+                .fields
+                .iter()
+                .position(|f| f == field)
+                // we can remove later if we want silent filter (if not found)
+                // which can be useful once we have multiple scanners (multi-table queries)
+                .expect(&format!(
+                    "'{}' field not found in table '{}'",
+                    field, schema.table
+                )),
+            source,
+            ran: false,
+        }
+    }
+}
+
+use std::collections::BTreeMap;
+
+struct Index {
+    ptrs: BTreeMap<Field, usize>,
+    table: String,
+}
+
+impl Index {
+    fn new(ptrs: BTreeMap<Field, usize>, table: &str) -> Self {
+        Index {
+            ptrs,
+            table: table.into(),
+        }
+    }
+
+    fn search(&self, value: &str) -> Option<Row> {
+        let mut file = buf_reader(format!("./ml-20m/{}.csv", self.table)).unwrap();
+        file.seek(SeekFrom::Start(*self.ptrs.get(value).unwrap() as u64))
+            .unwrap();
+        let mut row = vec![];
+        let _ = file.read_until(b'\n', &mut row).unwrap();
+        // TODO: abstract
+        Some(
+            row.split(|b| *b == b',')
+                .map(|bytes| std::str::from_utf8(bytes))
+                .map(Result::unwrap)
+                .map(|s| s.trim())
+                .map(|s| s.to_owned())
+                .collect(),
+        )
+    }
+}
+
+impl<'a> Iterator for IndexBuilder<'a> {
+    // I'm different too!
+    type Item = Index;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ran {
+            return None;
+        }
+        self.ran = true;
+
+        let mut results = BTreeMap::new();
+        while let Some(row) = self.source.next() {
+            results.insert(row[self.idx].clone(), self.source.offset());
+        }
+        Some(Index::new(results, self.source.table()))
+    }
+}
+
 fn main() {
     let query = fs::read_to_string("query.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
@@ -252,18 +366,18 @@ fn main() {
 
     let results: Vec<Row> = match (query.selection, query.projection) {
         (Some(selection), Some(projection)) => {
-            let mut selector = Selector::new(selection, &mut scanner, schema.clone())
+            let mut selector = Selector::new(selection, &mut scanner, &schema)
                 .into_iter()
                 .flatten();
-            let projector = Projector::new(projection, &mut selector, schema);
+            let projector = Projector::new(projection, &mut selector, &schema);
             projector.into_iter().collect()
         }
         (Some(selection), None) => {
-            let selector = Selector::new(selection, &mut scanner, schema);
+            let selector = Selector::new(selection, &mut scanner, &schema);
             selector.into_iter().flatten().collect()
         }
         (None, Some(projection)) => {
-            let projector = Projector::new(projection, &mut scanner, schema);
+            let projector = Projector::new(projection, &mut scanner, &schema);
             projector.into_iter().collect()
         }
         (None, None) => scanner.into_iter().collect(),
@@ -271,4 +385,12 @@ fn main() {
 
     println!("results:");
     println!("{results:?}");
+
+    let mut scanner = FileScan::new(&scan[0]);
+    // meh, this is a vec... bleeping FromIterator
+    let index: Vec<Index> = IndexBuilder::new("movieId", &mut scanner, &schema)
+        .into_iter()
+        .collect();
+    // oops I'm returning 5001
+    println!("bin search: {:?}", index[0].search("5000"));
 }

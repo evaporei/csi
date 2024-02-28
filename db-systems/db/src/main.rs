@@ -92,19 +92,25 @@ impl FileScan {
 
 trait Offset: Iterator<Item = Row> {
     fn offset(&self) -> usize;
-    // move elsewhere
-    fn table(&self) -> &str;
 }
 
 impl Offset for FileScan {
     fn offset(&self) -> usize {
         self.offset
     }
+}
 
+trait Metadata {
+    fn table(&self) -> &str;
+}
+
+impl Metadata for FileScan {
     fn table(&self) -> &str {
         &self.table
     }
 }
+
+impl Source for FileScan {}
 
 // Tuple
 type Row = Vec<String>;
@@ -274,16 +280,17 @@ impl<'a> Iterator for Selector<'a> {
     }
 }
 
-type Field = String;
+// this is lame IMO
+trait Source: Offset + Metadata {}
 
 struct IndexBuilder<'a> {
-    source: &'a mut dyn Offset,
+    source: &'a mut dyn Source,
     idx: usize,
     ran: bool,
 }
 
 impl<'a> IndexBuilder<'a> {
-    fn new(field: &str, source: &'a mut dyn Offset, schema: &Schema) -> Self {
+    fn new(field: &str, source: &'a mut dyn Source, schema: &Schema) -> Self {
         Self {
             idx: schema
                 .fields
@@ -301,7 +308,33 @@ impl<'a> IndexBuilder<'a> {
     }
 }
 
+impl<'a> Iterator for IndexBuilder<'a> {
+    // I'm different too!
+    type Item = Index;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ran {
+            return None;
+        }
+        self.ran = true;
+
+        let mut results = BTreeMap::new();
+        loop {
+            let offset = self.source.offset();
+            match self.source.next() {
+                Some(row) => {
+                    results.insert(row[self.idx].clone(), offset);
+                }
+                None => break,
+            }
+        }
+        Some(Index::new(results, self.source.table()))
+    }
+}
+
 use std::collections::BTreeMap;
+
+type Field = String;
 
 struct Index {
     ptrs: BTreeMap<Field, usize>,
@@ -331,30 +364,6 @@ impl Index {
                 .map(|s| s.to_owned())
                 .collect(),
         )
-    }
-}
-
-impl<'a> Iterator for IndexBuilder<'a> {
-    // I'm different too!
-    type Item = Index;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ran {
-            return None;
-        }
-        self.ran = true;
-
-        let mut results = BTreeMap::new();
-        loop {
-            let offset = self.source.offset();
-            match self.source.next() {
-                Some(row) => {
-                    results.insert(row[self.idx].clone(), offset);
-                }
-                None => break,
-            }
-        }
-        Some(Index::new(results, self.source.table()))
     }
 }
 

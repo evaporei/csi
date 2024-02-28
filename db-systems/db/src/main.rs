@@ -345,8 +345,14 @@ impl<'a> Iterator for IndexBuilder<'a> {
         self.ran = true;
 
         let mut results = BTreeMap::new();
-        while let Some(row) = self.source.next() {
-            results.insert(row[self.idx].clone(), self.source.offset());
+        loop {
+            let offset = self.source.offset();
+            match self.source.next() {
+                Some(row) => {
+                    results.insert(row[self.idx].clone(), offset);
+                }
+                None => break,
+            }
         }
         Some(Index::new(results, self.source.table()))
     }
@@ -391,6 +397,6 @@ fn main() {
     let index: Vec<Index> = IndexBuilder::new("movieId", &mut scanner, &schema)
         .into_iter()
         .collect();
-    // oops I'm returning 5001
-    println!("bin search: {:?}", index[0].search("5000"));
+    println!("bin search:");
+    println!("{:?}", index[0].search("5000"));
 }

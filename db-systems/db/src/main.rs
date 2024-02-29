@@ -318,7 +318,7 @@ impl<'a> Iterator for IndexBuilder<'a> {
         }
         self.ran = true;
 
-        let mut results = BTreeMap::new();
+        let mut results = BadBTree::new();
         loop {
             let offset = self.source.offset();
             match self.source.next() {
@@ -328,21 +328,57 @@ impl<'a> Iterator for IndexBuilder<'a> {
                 None => break,
             }
         }
+        // this is a non sense "btree"
+        results.sort();
         Some(Index::new(results, self.source.table()))
     }
 }
 
-use std::collections::BTreeMap;
+#[derive(Debug)]
+struct BadBTree<K, V> {
+    entries: Vec<(K, V)>,
+}
+
+impl<K, V> BadBTree<K, V>
+where
+    K: Ord,
+{
+    fn new() -> Self {
+        Self { entries: vec![] }
+    }
+
+    fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        Q: ?Sized + Ord,
+        K: core::borrow::Borrow<Q> + PartialEq<Q>,
+    {
+        for (k, v) in &self.entries {
+            if k == key {
+                return Some(&v);
+            }
+        }
+        None
+    }
+
+    fn insert(&mut self, key: K, value: V) {
+        self.entries.push((key, value));
+    }
+
+    // lol, this is really ridiculous
+    fn sort(&mut self) {
+        self.entries.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    }
+}
 
 type Field = String;
 
 struct Index {
-    ptrs: BTreeMap<Field, usize>,
+    ptrs: BadBTree<Field, usize>,
     table: String,
 }
 
 impl Index {
-    fn new(ptrs: BTreeMap<Field, usize>, table: &str) -> Self {
+    fn new(ptrs: BadBTree<Field, usize>, table: &str) -> Self {
         Index {
             ptrs,
             table: table.into(),

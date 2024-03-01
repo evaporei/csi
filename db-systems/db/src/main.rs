@@ -370,7 +370,7 @@ impl Index {
 }
 
 fn main() {
-    let query = fs::read_to_string("query.json").unwrap();
+    let query = fs::read_to_string("queries/simple.json").unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 

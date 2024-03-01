@@ -17,6 +17,10 @@ pub struct BTreeMap<K, V> {
 
 impl<K, V> BTreeMap<K, V> {
     pub fn new() -> Self {
+        // getting these results with the movies table
+        // - length: 27278,
+        // - depth: 5,
+        // - b: 6,
         Self::with_b(6)
     }
     fn with_b(b: usize) -> Self {

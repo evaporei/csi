@@ -1,9 +1,9 @@
 mod node;
 mod stack;
 
+use node::InsertionResult::*;
 use node::Node;
 use node::SearchResult::*;
-use node::InsertionResult::*;
 use stack::*;
 
 use std::mem;
@@ -45,7 +45,7 @@ impl<K: Ord, V> BTreeMap<K, V> {
                     let next = curr.edge(i)?;
                     curr = next;
                     continue;
-                },
+                }
             }
         }
     }
@@ -61,16 +61,14 @@ impl<K: Ord, V> BTreeMap<K, V> {
                     let next = stack.into_next();
                     mem::swap(next.unsafe_val_mut(i), &mut value);
                     return Some(value);
-                }
+                },
                 GoDown(i) => {
                     stack = match stack.push(i) {
                         PushResult::Done(new_stack) => {
                             new_stack.insert(key, value);
                             return None;
                         }
-                        PushResult::Grew(new_stack) => {
-                            new_stack
-                        }
+                        PushResult::Grew(new_stack) => new_stack,
                     }
                 }
             }
@@ -87,9 +85,7 @@ impl<K: Ord, V> BTreeMap<K, V> {
                 GoDown(i) => {
                     stack = match stack.push(i) {
                         PushResult::Done(_) => return None,
-                        PushResult::Grew(new_stack) => {
-                            new_stack
-                        }
+                        PushResult::Grew(new_stack) => new_stack,
                     };
                 }
             }

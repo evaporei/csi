@@ -5,7 +5,7 @@ type StackItem<K, V> = (*mut Node<K, V>, usize);
 type Stack<K, V> = Vec<StackItem<K, V>>;
 
 /// A PartialSearchStack handles the construction of a search stack.
-pub struct PartialSearchStack<'a, K:'a, V:'a> {
+pub struct PartialSearchStack<'a, K: 'a, V: 'a> {
     map: &'a mut BTreeMap<K, V>,
     stack: Stack<K, V>,
     next: *mut Node<K, V>,
@@ -13,7 +13,7 @@ pub struct PartialSearchStack<'a, K:'a, V:'a> {
 
 /// A SearchStack represents a full path to an element of interest. It provides methods
 /// for manipulating the element at the top of its stack.
-pub struct SearchStack<'a, K:'a, V:'a> {
+pub struct SearchStack<'a, K: 'a, V: 'a> {
     map: &'a mut BTreeMap<K, V>,
     stack: Stack<K, V>,
     top: StackItem<K, V>,
@@ -22,7 +22,7 @@ pub struct SearchStack<'a, K:'a, V:'a> {
 /// The result of asking a PartialSearchStack to push another node onto itself. Either it
 /// Grew, in which case it's still Partial, or it found its last node was actually a leaf, in
 /// which case it seals itself and yields a complete SearchStack.
-pub enum PushResult<'a, K:'a, V:'a> {
+pub enum PushResult<'a, K: 'a, V: 'a> {
     Grew(PartialSearchStack<'a, K, V>),
     Done(SearchStack<'a, K, V>),
 }
@@ -49,9 +49,7 @@ impl<'a, K, V> PartialSearchStack<'a, K, V> {
         let map = self.map;
         let mut stack = self.stack;
         let next_ptr = self.next;
-        let next_node = unsafe {
-            &mut *next_ptr
-        };
+        let next_node = unsafe { &mut *next_ptr };
         let to_insert = (next_ptr, edge);
         match next_node.edge_mut(edge) {
             None => Done(SearchStack {
@@ -66,22 +64,18 @@ impl<'a, K, V> PartialSearchStack<'a, K, V> {
                     stack,
                     next: node as *mut _,
                 })
-            },
+            }
         }
     }
 
     /// Converts the stack into a mutable reference to its top.
     pub fn into_next(self) -> &'a mut Node<K, V> {
-        unsafe {
-            &mut *self.next
-        }
+        unsafe { &mut *self.next }
     }
 
     /// Gets the top of the stack.
     pub fn next(&self) -> &Node<K, V> {
-        unsafe {
-            &*self.next
-        }
+        unsafe { &*self.next }
     }
 
     /// Converts the PartialSearchStack into a SearchStack.
@@ -110,9 +104,7 @@ impl<'a, K, V> SearchStack<'a, K, V> {
             let mut stack = self.stack;
             // Insert the key and value into the leaf at the top of the stack
             let (node, index) = self.top;
-            let (mut insertion, inserted_ptr) = {
-                (*node).insert_as_leaf(index, key, val)
-            };
+            let (mut insertion, inserted_ptr) = { (*node).insert_as_leaf(index, key, val) };
 
             loop {
                 match insertion {
@@ -138,7 +130,7 @@ impl<'a, K, V> SearchStack<'a, K, V> {
                             insertion = (*node).insert_as_internal(index, key, val, right);
                             continue;
                         }
-                    }
+                    },
                 }
             }
         }
@@ -212,8 +204,10 @@ impl<'a, K, V> SearchStack<'a, K, V> {
             // First, get ptrs to the found key-value pair
             let node = &mut *node_ptr;
             let (key_ptr, val_ptr) = {
-                (node.unsafe_key_mut(index) as *mut _,
-                node.unsafe_val_mut(index) as *mut _)
+                (
+                    node.unsafe_key_mut(index) as *mut _,
+                    node.unsafe_val_mut(index) as *mut _,
+                )
             };
 
             // Try to go into the right subtree of the found key to find its successor

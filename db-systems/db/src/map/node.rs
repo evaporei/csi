@@ -1,7 +1,7 @@
-use std::cmp::Ordering::*;
-use std::ptr;
-use std::mem;
 use core::borrow::Borrow;
+use std::cmp::Ordering::*;
+use std::mem;
+use std::ptr;
 
 pub enum SearchResult {
     Found(usize),
@@ -16,7 +16,6 @@ pub enum InsertionResult<K, V> {
     /// The inserted element did not fit, so the node was split
     Split(K, V, Node<K, V>),
 }
-
 
 /// Get the capacity of a node from the order of the parent B-Tree
 fn capacity_from_b(b: usize) -> usize {
@@ -57,7 +56,7 @@ pub struct Node<K, V> {
 }
 
 impl<K, V> Node<K, V> {
-        /// Make a new internal node
+    /// Make a new internal node
     pub fn new_internal(capacity: usize) -> Node<K, V> {
         Node {
             keys: Vec::with_capacity(capacity),
@@ -81,8 +80,13 @@ impl<K, V> Node<K, V> {
     }
 
     /// Make an internal root and swap it with an old root
-    pub fn make_internal_root(left_and_out: &mut Node<K,V>, b: usize, key: K, value: V,
-            right: Node<K,V>) {
+    pub fn make_internal_root(
+        left_and_out: &mut Node<K, V>,
+        b: usize,
+        key: K,
+        value: V,
+        right: Node<K, V>,
+    ) {
         let mut node = Node::new_internal(capacity_from_b(b));
         mem::swap(left_and_out, &mut node);
         left_and_out.keys.push(key);
@@ -90,7 +94,6 @@ impl<K, V> Node<K, V> {
         left_and_out.edges.push(node);
         left_and_out.edges.push(right);
     }
-
 
     /// How many key-value pairs the node contains
     pub fn len(&self) -> usize {
@@ -140,22 +143,22 @@ impl<K, V> Node<K, V> {
     }
 
     /// Get the node's edge at the given index
-    pub fn edge(&self, index: usize) -> Option<&Node<K,V>> {
+    pub fn edge(&self, index: usize) -> Option<&Node<K, V>> {
         self.edges.as_slice().get(index)
     }
 
     /// Get the node's edge mutably at the given index
-    pub fn edge_mut(&mut self, index: usize) -> Option<&mut Node<K,V>> {
+    pub fn edge_mut(&mut self, index: usize) -> Option<&mut Node<K, V>> {
         self.edges.as_mut_slice().get_mut(index)
     }
 
     /// Get the node's edge mutably without any bounds checks.
-    pub unsafe fn unsafe_edge_mut(&mut self, index: usize) -> &mut Node<K,V> {
+    pub unsafe fn unsafe_edge_mut(&mut self, index: usize) -> &mut Node<K, V> {
         &mut self.edges.as_mut_slice()[index]
     }
 
     /// Pop an edge off the end of the node
-    pub fn pop_edge(&mut self) -> Option<Node<K,V>> {
+    pub fn pop_edge(&mut self) -> Option<Node<K, V>> {
         self.edges.pop()
     }
 
@@ -164,12 +167,18 @@ impl<K, V> Node<K, V> {
     ///
     /// Returns a *mut V to the inserted value, because the caller may want this when
     /// they're done mutating the tree, but we don't want to borrow anything for now.
-    pub fn insert_as_leaf(&mut self, index: usize, key: K, value: V) ->
-            (InsertionResult<K, V>, *mut V) {
+    pub fn insert_as_leaf(
+        &mut self,
+        index: usize,
+        key: K,
+        value: V,
+    ) -> (InsertionResult<K, V>, *mut V) {
         if !self.is_full() {
             // The element can fit, just insert it
             self.insert_fit_as_leaf(index, key, value);
-            (InsertionResult::Fit, unsafe { self.unsafe_val_mut(index) as *mut _ })
+            (InsertionResult::Fit, unsafe {
+                self.unsafe_val_mut(index) as *mut _
+            })
         } else {
             // The element can't fit, this node is full. Split it into two nodes.
             let (new_key, new_val, mut new_right) = self.split();
@@ -189,8 +198,13 @@ impl<K, V> Node<K, V> {
 
     /// Try to insert this key-value pair at the given index in this internal node
     /// If the node is full, we have to split it.
-    pub fn insert_as_internal(&mut self, index: usize, key: K, value: V, right: Node<K, V>)
-            -> InsertionResult<K, V> {
+    pub fn insert_as_internal(
+        &mut self,
+        index: usize,
+        key: K,
+        value: V,
+        right: Node<K, V>,
+    ) -> InsertionResult<K, V> {
         if !self.is_full() {
             // The element can fit, just insert it
             self.insert_fit_as_internal(index, key, value, right);
@@ -237,11 +251,7 @@ impl<K, V> Node<K, V> {
 impl<K, V> Node<K, V> {
     /// Make a node from its raw components
     fn from_vecs(keys: Vec<K>, vals: Vec<V>, edges: Vec<Node<K, V>>) -> Node<K, V> {
-        Node {
-            keys,
-            vals,
-            edges,
-        }
+        Node { keys, vals, edges }
     }
 
     /// We have somehow verified that this key-value pair will fit in this internal node,
@@ -322,7 +332,7 @@ impl<K, V> Node<K, V> {
             right.vals.insert(0, val);
             match edge {
                 None => {}
-                Some(e) => right.edges.insert(0, e)
+                Some(e) => right.edges.insert(0, e),
             }
         }
     }
@@ -333,7 +343,11 @@ impl<K, V> Node<K, V> {
         // Take the smallest stuff off right
         let (mut key, mut val, edge) = {
             let right = self.unsafe_edge_mut(underflowed_child_index + 1);
-            (right.keys.remove(0), right.vals.remove(0), right.edges.remove(0))
+            (
+                right.keys.remove(0),
+                right.vals.remove(0),
+                right.edges.remove(0),
+            )
         };
 
         // Swap the parent's seperating key-value pair with right's
@@ -354,9 +368,11 @@ impl<K, V> Node<K, V> {
         // Permanently remove right's index, and the key-value pair that seperates
         // left and right
         let (key, val, right) = {
-            (self.keys.remove(left_index),
+            (
+                self.keys.remove(left_index),
                 self.vals.remove(left_index),
-                self.edges.remove(left_index + 1))
+                self.edges.remove(left_index + 1),
+            )
         };
 
         // Give left right's stuff.
@@ -386,7 +402,7 @@ impl<K: Ord, V> Node<K, V> {
     {
         for (i, k) in self.keys.iter().enumerate() {
             match k.borrow().cmp(key) {
-                Less => {},
+                Less => {}
                 Equal => return Found(i),
                 Greater => return GoDown(i),
             }

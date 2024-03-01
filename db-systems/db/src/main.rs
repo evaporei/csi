@@ -336,7 +336,6 @@ impl<'a> Iterator for IndexBuilder<'a> {
     }
 }
 
-
 type Field = String;
 
 struct Index {

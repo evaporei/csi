@@ -21,7 +21,13 @@ impl<K, V> BTreeMap<K, V> {
         // - length: 27278,
         // - depth: 5,
         // - b: 6,
-        Self::with_b(6)
+        // Self::with_b(6)
+
+        // changed to 24 to make smaller depth (kinda like b+tree)
+        // - length: 27278,
+        // - depth: 3,
+        // - b: 24,
+        Self::with_b(24)
     }
     fn with_b(b: usize) -> Self {
         Self {

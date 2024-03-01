@@ -92,3 +92,16 @@ impl<K: Ord, V> BTreeMap<K, V> {
         }
     }
 }
+
+use std::fmt;
+
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for BTreeMap<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BTreeMap")
+         .field("root", &self.root)
+         .field("length", &self.length)
+         .field("depth", &self.depth)
+         .field("b", &self.b)
+         .finish()
+    }
+}

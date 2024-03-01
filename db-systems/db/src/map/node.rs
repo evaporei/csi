@@ -410,3 +410,15 @@ impl<K: Ord, V> Node<K, V> {
         GoDown(self.len())
     }
 }
+
+use std::fmt;
+
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Node<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Node")
+         .field("keys", &self.keys)
+         .field("vals", &self.vals)
+         .field("edges", &self.edges)
+         .finish()
+    }
+}

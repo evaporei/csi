@@ -121,11 +121,6 @@ impl<K, V> Node<K, V> {
         self.vals.as_slice().get(index)
     }
 
-    /// Get the node's value at the given index
-    pub fn val_mut(&mut self, index: usize) -> Option<&mut V> {
-        self.vals.as_mut_slice().get_mut(index)
-    }
-
     /// Get the node's value mutably without any bounds checks.
     pub unsafe fn unsafe_val_mut(&mut self, index: usize) -> &mut V {
         &mut self.vals.as_mut_slice()[index]
@@ -413,7 +408,7 @@ enum SearchResult {
     GoDown(usize),
 }
 
-pub enum InsertionResult<K, V> {
+enum InsertionResult<K, V> {
     /// The inserted element fit
     Fit,
     /// The inserted element did not fit, so the node was split
@@ -588,31 +583,6 @@ mod stack {
     }
 
     impl<'a, K, V> SearchStack<'a, K, V> {
-        /// Gets a reference to the value the stack points to.
-        pub fn peek(&self) -> &V {
-            let (node_ptr, index) = self.top;
-            unsafe {
-                (*node_ptr).val(index).unwrap()
-            }
-        }
-
-        /// Gets a mutable reference to the value the stack points to.
-        pub fn peek_mut(&mut self) -> &mut V {
-            let (node_ptr, index) = self.top;
-            unsafe {
-                (*node_ptr).val_mut(index).unwrap()
-            }
-        }
-
-        /// Converts the stack into a mutable reference to the value it points to, with a lifetime
-        /// tied to the original tree.
-        pub fn into_top(self) -> &'a mut V {
-            let (node_ptr, index) = self.top;
-            unsafe {
-                (*node_ptr).val_mut(index).unwrap()
-            }
-        }
-
         /// Inserts the key and value into the top element in the stack, and if that node has to
         /// split recursively inserts the split contents into the next element stack until
         /// splits stop.

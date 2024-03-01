@@ -2,7 +2,7 @@ use std::fs::{self, File};
 use std::io::{self, BufRead, Seek, SeekFrom};
 use std::path::Path;
 
-use db::map::BTreeMap;
+use db::btree::BTreeMap;
 
 fn buf_reader<P>(filename: P) -> io::Result<io::BufReader<File>>
 where

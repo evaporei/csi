@@ -401,6 +401,7 @@ fn main() {
             .map(|some| some.iter().any(|f| f.contains(".")))
             .unwrap_or(false);
     if should_join {
+        assert_eq!(scan.len(), 2, "for now just JOINs w/ two tables");
         println!("woo join");
     } else {
         for mut scanner in scanners {

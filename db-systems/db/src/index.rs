@@ -1,8 +1,8 @@
 use std::io::{BufRead, Seek, SeekFrom};
 
 use crate::btree::BTreeMap;
-use crate::source::{Source, Row, Schema};
 use crate::fs::buf_reader;
+use crate::source::{Row, Schema, Source};
 
 pub struct IndexBuilder<'a> {
     source: &'a mut dyn Source,

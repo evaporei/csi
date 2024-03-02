@@ -50,4 +50,3 @@ impl From<Value> for Query {
         query
     }
 }
-

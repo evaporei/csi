@@ -1,8 +1,8 @@
 use std::fs::read_to_string;
 
-use db::query::Query;
-use db::source::{FileScan, Projector, Selector, Row, Schema, Metadata};
 use db::index::IndexBuilder;
+use db::query::Query;
+use db::source::{FileScan, Metadata, Projector, Row, Schema, Selector};
 
 // const QUERY: &str = "queries/simple.json";
 // const QUERY: &str = "queries/multi-table.json";

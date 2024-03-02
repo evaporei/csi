@@ -1,5 +1,5 @@
-use std::fs::File;
 use crate::fs::{buf_reader, read_lines};
+use std::fs::File;
 use std::io::{self, BufRead};
 
 // this is lame IMO

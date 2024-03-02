@@ -356,16 +356,22 @@ impl<'a> Iterator for HashJoin<'a> {
         }
         self.ran = true;
 
-        let outer_table = self.outer.into_iter().fold(BTreeMap::new(), |mut acc, row| {
-            let outer_column = row[self.outer_idx].clone();
-            acc.insert(outer_column, row);
-            acc
-        });
-        let inner_table = self.inner.into_iter().fold(BTreeMap::new(), |mut acc, row| {
-            let inner_column = row[self.inner_idx].clone();
-            acc.insert(inner_column, row);
-            acc
-        });
+        let outer_table = self
+            .outer
+            .into_iter()
+            .fold(BTreeMap::new(), |mut acc, row| {
+                let outer_column = row[self.outer_idx].clone();
+                acc.insert(outer_column, row);
+                acc
+            });
+        let inner_table = self
+            .inner
+            .into_iter()
+            .fold(BTreeMap::new(), |mut acc, row| {
+                let inner_column = row[self.inner_idx].clone();
+                acc.insert(inner_column, row);
+                acc
+            });
 
         let mut results = vec![];
 

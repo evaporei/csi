@@ -3,59 +3,7 @@ use std::io::{self, BufRead, Seek, SeekFrom};
 
 use db::btree::BTreeMap;
 use db::fs::{buf_reader, read_lines};
-
-type Parts = Vec<String>;
-
-#[derive(Debug, Default)]
-struct Query {
-    projection: Option<Parts>, // fields/attributes
-    selection: Option<Parts>,  // conditions
-    scan: Option<Parts>,       // tables
-}
-
-use serde_json::Value;
-
-impl From<Value> for Query {
-    fn from(json: Value) -> Self {
-        let mut query = Query::default();
-        for clause in json.as_array().unwrap() {
-            if clause[0] == "PROJECTION" {
-                // lol
-                query.projection = Some(
-                    clause[1]
-                        .as_array()
-                        .unwrap()
-                        .into_iter()
-                        .map(|a| a.as_str().unwrap().to_owned())
-                        .collect(),
-                );
-            }
-            if clause[0] == "SELECTION" {
-                // lol
-                query.selection = Some(
-                    clause[1]
-                        .as_array()
-                        .unwrap()
-                        .into_iter()
-                        .map(|a| a.as_str().unwrap().to_owned())
-                        .collect(),
-                );
-            }
-            if clause[0] == "SCAN" {
-                // lol
-                query.scan = Some(
-                    clause[1]
-                        .as_array()
-                        .unwrap()
-                        .into_iter()
-                        .map(|a| a.as_str().unwrap().to_owned())
-                        .collect(),
-                );
-            }
-        }
-        query
-    }
-}
+use db::query::Query;
 
 struct FileScan {
     offset: usize,
@@ -365,7 +313,7 @@ const QUERY: &str = "queries/join.json";
 
 fn main() {
     let query = read_to_string(QUERY).unwrap();
-    let json: Value = serde_json::from_str(&query).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 
     let scan = query

@@ -28,3 +28,12 @@
   - Threads, Shared Memory, and Parallelism [exercises](./langs-systems/threads)
   - Concurrency and Memory Models (didn't do the exercise yet)
   - Garbage Collection https://github.com/evaporei/gc
+- Database Systems [exercises](./db-systems/db)
+  - Introduction to Database Systems
+  - Sorting, Hashing, and Single Table Queries
+  - Physical Storage
+  - Indexes
+  - Joins
+  - Query Optimization
+  - Transactions and Concurrency
+  - Logging for Atomicity and Durability

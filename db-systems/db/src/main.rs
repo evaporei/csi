@@ -2,11 +2,11 @@ use std::fs::read_to_string;
 
 use db::index::IndexBuilder;
 use db::query::Query;
-use db::source::{FileScan, Metadata, Projector, Row, Schema, Selector};
+use db::source::{FileScan, Metadata, NestedJoin, Projector, Row, Schema, Selector};
 
 // const QUERY: &str = "queries/simple.json";
-const QUERY: &str = "queries/multi-table.json";
-// const QUERY: &str = "queries/join.json";
+// const QUERY: &str = "queries/multi-table.json";
+const QUERY: &str = "queries/join.json";
 
 fn main() {
     let query = read_to_string(QUERY).unwrap();
@@ -16,7 +16,7 @@ fn main() {
     let scan = query
         .scan
         .expect("there should be at least one table in the scan list");
-    let scanners: Vec<FileScan> = scan.iter().map(|table| FileScan::new(&table)).collect();
+    let mut scanners: Vec<FileScan> = scan.iter().map(|table| FileScan::new(&table)).collect();
 
     // TODO: ewww, make this pretty plsss
     // this means we're doing table.field in the query, aka JOINs!!!
@@ -32,7 +32,12 @@ fn main() {
             .unwrap_or(false);
     if should_join {
         assert_eq!(scan.len(), 2, "for now just JOINs w/ two tables");
-        println!("woo join");
+        let mut inner = scanners.remove(1);
+        let mut outer = scanners.remove(0);
+        let join = NestedJoin::new(&mut outer, &mut inner);
+        let results: Vec<_> = join.into_iter().collect();
+        println!("results:");
+        println!("{results:?}");
     } else {
         // single or multi-table queries (no JOINs)
         for mut scanner in scanners {

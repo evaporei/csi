@@ -219,3 +219,37 @@ impl<'a> Iterator for Selector<'a> {
         Some(results)
     }
 }
+
+pub struct NestedJoin<'a> {
+    outer: &'a mut dyn Iterator<Item = Row>,
+    inner: &'a mut dyn Iterator<Item = Row>,
+}
+
+impl<'a> NestedJoin<'a> {
+    pub fn new(
+        outer: &'a mut dyn Iterator<Item = Row>,
+        inner: &'a mut dyn Iterator<Item = Row>,
+    ) -> Self {
+        Self { outer, inner }
+    }
+}
+
+impl<'a> Iterator for NestedJoin<'a> {
+    type Item = Row;
+
+    // full outer join
+    fn next(&mut self) -> Option<Self::Item> {
+        match (self.outer.next(), self.inner.next()) {
+            (Some(mut outer_row), Some(mut inner_row)) => {
+                outer_row.append(&mut inner_row);
+                Some(outer_row)
+            }
+            // to make an inner join, these below should return None
+            // however the whole `.next()` would need to consume it all,
+            // so the `.collect()` doesn't stop in the middle
+            (Some(outer_row), None) => Some(outer_row), // left
+            (None, Some(inner_row)) => Some(inner_row), // right
+            (None, None) => None,
+        }
+    }
+}

@@ -374,8 +374,11 @@ impl Index {
     }
 }
 
+// const QUERY: &str = "queries/simple.json";
+const QUERY: &str = "queries/multi-table.json";
+
 fn main() {
-    let query = fs::read_to_string("queries/simple.json").unwrap();
+    let query = fs::read_to_string(QUERY).unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 

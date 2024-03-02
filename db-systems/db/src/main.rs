@@ -385,33 +385,37 @@ fn main() {
     let scan = query
         .scan
         .expect("there should be at least one table in the scan list");
-    // TODO: multiple scanners
-    let mut scanner = FileScan::new(&scan[0]);
-    let schema = Schema::new(scanner.table());
+    let scanners: Vec<FileScan> = scan.iter().map(|table| FileScan::new(&table)).collect();
 
-    let results: Vec<Row> = match (query.selection, query.projection) {
-        (Some(selection), Some(projection)) => {
-            let mut selector = Selector::new(selection, &mut scanner, &schema)
-                .into_iter()
-                .flatten();
-            let projector = Projector::new(projection, &mut selector, &schema);
-            projector.into_iter().collect()
-        }
-        (Some(selection), None) => {
-            let selector = Selector::new(selection, &mut scanner, &schema);
-            selector.into_iter().flatten().collect()
-        }
-        (None, Some(projection)) => {
-            let projector = Projector::new(projection, &mut scanner, &schema);
-            projector.into_iter().collect()
-        }
-        (None, None) => scanner.into_iter().collect(),
-    };
+    for mut scanner in scanners {
+        let schema = Schema::new(scanner.table());
 
-    println!("results:");
-    println!("{results:?}");
+        let results: Vec<Row> = match (query.selection.clone(), query.projection.clone()) {
+            (Some(selection), Some(projection)) => {
+                let mut selector = Selector::new(selection, &mut scanner, &schema)
+                    .into_iter()
+                    .flatten();
+                let projector = Projector::new(projection, &mut selector, &schema);
+                projector.into_iter().collect()
+            }
+            (Some(selection), None) => {
+                let selector = Selector::new(selection, &mut scanner, &schema);
+                selector.into_iter().flatten().collect()
+            }
+            (None, Some(projection)) => {
+                let projector = Projector::new(projection, &mut scanner, &schema);
+                projector.into_iter().collect()
+            }
+            (None, None) => scanner.into_iter().collect(),
+        };
 
-    let mut scanner = FileScan::new(&scan[0]);
+        println!("results:");
+        println!("{results:?}");
+    }
+
+    // index example/tests
+    let schema = Schema::new("movies");
+    let mut scanner = FileScan::new("movies");
     // meh, this is a vec... bleeping FromIterator
     let index: Vec<Index> = IndexBuilder::new("movieId", &mut scanner, &schema)
         .into_iter()

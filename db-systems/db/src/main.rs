@@ -177,22 +177,22 @@ impl<'a> Projector<'a> {
         source: &'a mut dyn Iterator<Item = Row>,
         schema: &Schema,
     ) -> Self {
+        let idxs = projection
+            .iter()
+            .filter_map(|p| {
+                let opt = schema.fields.iter().position(|f| f == p);
+
+                if opt.is_none() {
+                    // for now, comment to disable warning
+                    // eprintln!("warn: '{p}' field not found in table '{}'", schema.table);
+                }
+
+                opt
+            })
+            .collect();
+
         Self {
-            idxs: projection
-                .iter()
-                .map(|p| {
-                    schema
-                        .fields
-                        .iter()
-                        .position(|f| f == p)
-                        // we can remove later if we want silent filter (if not found)
-                        // which can be useful once we have multiple scanners (multi-table queries)
-                        .expect(&format!(
-                            "'{p}' field not found in table '{}'",
-                            schema.table
-                        ))
-                })
-                .collect(),
+            idxs,
             source,
             projection,
         }
@@ -207,6 +207,11 @@ impl<'a> Iterator for Projector<'a> {
 
         if self.projection.is_empty() {
             return Some(row);
+        }
+
+        // we have nothing to do with the described fields
+        if self.idxs.is_empty() {
+            return None;
         }
 
         Some(

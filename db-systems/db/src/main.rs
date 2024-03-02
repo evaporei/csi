@@ -29,6 +29,7 @@ fn main() {
         let results: Vec<_> = join.into_iter().flatten().collect();
         println!("results:");
         println!("{results:?}");
+        // TODO: impl projection here
     } else {
         // single or multi-table queries (no JOINs)
         for mut scanner in scanners {

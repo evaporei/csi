@@ -4,3 +4,4 @@ pub mod btree;
 // I'll fix that later
 pub mod fs;
 pub mod query;
+pub mod source;

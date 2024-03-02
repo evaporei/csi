@@ -5,8 +5,8 @@ use db::query::Query;
 use db::source::{FileScan, Metadata, Projector, Row, Schema, Selector};
 
 // const QUERY: &str = "queries/simple.json";
-// const QUERY: &str = "queries/multi-table.json";
-const QUERY: &str = "queries/join.json";
+const QUERY: &str = "queries/multi-table.json";
+// const QUERY: &str = "queries/join.json";
 
 fn main() {
     let query = read_to_string(QUERY).unwrap();
@@ -34,6 +34,7 @@ fn main() {
         assert_eq!(scan.len(), 2, "for now just JOINs w/ two tables");
         println!("woo join");
     } else {
+        // single or multi-table queries (no JOINs)
         for mut scanner in scanners {
             let schema = Schema::new(scanner.table());
 

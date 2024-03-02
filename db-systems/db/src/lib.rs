@@ -3,5 +3,6 @@ pub mod btree;
 // they are scattered across the code base
 // I'll fix that later
 pub mod fs;
+pub mod index;
 pub mod query;
 pub mod source;

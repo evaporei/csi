@@ -1,5 +1,5 @@
 [
   ["PROJECTION", ["ratings.rating"]],
-  ["SELECTION", ["movies.movieId", "EQUALS", "ratings.movieId"]],
-  ["SCAN", ["movies", "ratings"]]
+  ["SCAN", ["movies", "ratings"]],
+  ["JOIN", ["movies.movieId", "EQUALS", "ratings.movieId"]]
 ]

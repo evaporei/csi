@@ -18,24 +18,14 @@ fn main() {
         .expect("there should be at least one table in the scan list");
     let mut scanners: Vec<FileScan> = scan.iter().map(|table| FileScan::new(&table)).collect();
 
-    // TODO: ewww, make this pretty plsss
-    // this means we're doing table.field in the query, aka JOINs!!!
-    let should_join = query
-        .selection
-        .as_ref()
-        .map(|some| some.iter().any(|f| f.contains(".")))
-        .unwrap_or(false)
-        || query
-            .projection
-            .as_ref()
-            .map(|some| some.iter().any(|f| f.contains(".")))
-            .unwrap_or(false);
-    if should_join {
+    if let Some(join) = query.join {
         assert_eq!(scan.len(), 2, "for now just JOINs w/ two tables");
         let mut inner = scanners.remove(1);
         let mut outer = scanners.remove(0);
-        let join = NestedJoin::new(&mut outer, &mut inner);
-        let results: Vec<_> = join.into_iter().collect();
+        let outer_schema = Schema::new(outer.table());
+        let inner_schema = Schema::new(inner.table());
+        let join = NestedJoin::new(&mut outer, &mut inner, outer_schema, inner_schema, join);
+        let results: Vec<_> = join.into_iter().flatten().collect();
         println!("results:");
         println!("{results:?}");
     } else {

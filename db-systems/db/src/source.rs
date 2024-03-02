@@ -1,9 +1,9 @@
 use crate::fs::{buf_reader, read_lines};
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Seek, SeekFrom};
 
 // this is lame IMO
-pub trait Source: Offset + Metadata {}
+pub trait Source: Offset + Metadata + Reset {}
 
 pub trait Offset: Iterator<Item = Row> {
     fn offset(&self) -> usize;
@@ -11,6 +11,10 @@ pub trait Offset: Iterator<Item = Row> {
 
 pub trait Metadata {
     fn table(&self) -> &str;
+}
+
+pub trait Reset {
+    fn reset(&mut self);
 }
 
 pub struct FileScan {
@@ -42,6 +46,14 @@ impl Offset for FileScan {
 impl Metadata for FileScan {
     fn table(&self) -> &str {
         &self.table
+    }
+}
+
+impl Reset for FileScan {
+    fn reset(&mut self) {
+        self.file.seek(SeekFrom::Start(0)).unwrap();
+        let mut trash = vec![];
+        self.offset = self.file.read_until(b'\n', &mut trash).unwrap();
     }
 }
 
@@ -171,6 +183,11 @@ impl<'a> Selector<'a> {
         source: &'a mut dyn Iterator<Item = Row>,
         schema: &Schema,
     ) -> Self {
+        assert_eq!(
+            selection[1], "EQUALS",
+            "SELECTION clause only supports EQUALS"
+        );
+
         Self {
             idx: schema
                 .fields
@@ -201,55 +218,87 @@ impl<'a> Iterator for Selector<'a> {
 
         let mut results = vec![];
         while let Some(row) = self.source.next() {
-            match &self.selection[1][..] {
-                "EQUALS" => {
-                    if row[self.idx] == self.selection[2] {
-                        results.push(row);
-                    }
-                }
-                _ => {
-                    // TODO: should print only on ::new
-                    println!(
-                        "warn: selection operation '{}' not supported",
-                        self.selection[1]
-                    );
-                }
+            if row[self.idx] == self.selection[2] {
+                results.push(row);
             }
         }
         Some(results)
     }
 }
 
+/// Don't ever use this, it just runs forever ;-;
+/// I'll see if optimizing the file accesses makes
+/// this usable.
 pub struct NestedJoin<'a> {
-    outer: &'a mut dyn Iterator<Item = Row>,
-    inner: &'a mut dyn Iterator<Item = Row>,
+    outer: &'a mut dyn Source,
+    inner: &'a mut dyn Source,
+    outer_idx: usize,
+    inner_idx: usize,
+    ran: bool,
 }
 
 impl<'a> NestedJoin<'a> {
     pub fn new(
-        outer: &'a mut dyn Iterator<Item = Row>,
-        inner: &'a mut dyn Iterator<Item = Row>,
+        outer: &'a mut dyn Source,
+        inner: &'a mut dyn Source,
+        outer_schema: Schema,
+        inner_schema: Schema,
+        on: Vec<String>,
     ) -> Self {
-        Self { outer, inner }
+        assert_eq!(on[1], "EQUALS", "JOIN clauses only supports EQUALS");
+        let outer_field = &on[0].split('.').skip(1).next().unwrap();
+        let inner_field = &on[2].split('.').skip(1).next().unwrap();
+        let outer_idx = outer_schema
+            .fields
+            .iter()
+            .position(|f| f == outer_field)
+            .expect("unrecognized field for outer table in JOIN");
+        let inner_idx = inner_schema
+            .fields
+            .iter()
+            .position(|f| f == inner_field)
+            .expect("unrecognized field for inner table in JOIN");
+        Self {
+            outer,
+            inner,
+            ran: false,
+            outer_idx,
+            inner_idx,
+        }
     }
 }
 
 impl<'a> Iterator for NestedJoin<'a> {
-    type Item = Row;
+    // here we go again
+    type Item = Vec<Row>;
 
-    // full outer join
+    // inner join
     fn next(&mut self) -> Option<Self::Item> {
-        match (self.outer.next(), self.inner.next()) {
-            (Some(mut outer_row), Some(mut inner_row)) => {
-                outer_row.append(&mut inner_row);
-                Some(outer_row)
-            }
-            // to make an inner join, these below should return None
-            // however the whole `.next()` would need to consume it all,
-            // so the `.collect()` doesn't stop in the middle
-            (Some(outer_row), None) => Some(outer_row), // left
-            (None, Some(inner_row)) => Some(inner_row), // right
-            (None, None) => None,
+        if self.ran {
+            return None;
         }
+        self.ran = true;
+
+        let mut results = vec![];
+        loop {
+            let outer_row = match self.outer.next() {
+                Some(row) => row,
+                None => break,
+            };
+            loop {
+                let mut inner_row = match self.inner.next() {
+                    Some(row) => row,
+                    None => break,
+                };
+                if outer_row[self.outer_idx] == inner_row[self.inner_idx] {
+                    let mut result = outer_row.clone();
+                    result.append(&mut inner_row);
+                    results.push(result);
+                }
+            }
+            self.inner.reset();
+        }
+
+        Some(results)
     }
 }

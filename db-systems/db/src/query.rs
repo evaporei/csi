@@ -7,6 +7,7 @@ pub struct Query {
     pub projection: Option<Parts>, // fields/attributes
     pub selection: Option<Parts>,  // conditions
     pub scan: Option<Parts>,       // tables
+    pub join: Option<Parts>,       // conditions
 }
 
 impl From<Value> for Query {
@@ -38,6 +39,17 @@ impl From<Value> for Query {
             if clause[0] == "SCAN" {
                 // lol
                 query.scan = Some(
+                    clause[1]
+                        .as_array()
+                        .unwrap()
+                        .into_iter()
+                        .map(|a| a.as_str().unwrap().to_owned())
+                        .collect(),
+                );
+            }
+            if clause[0] == "JOIN" {
+                // lol
+                query.join = Some(
                     clause[1]
                         .as_array()
                         .unwrap()

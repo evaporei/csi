@@ -1,23 +1,8 @@
-use std::fs::{self, File};
+use std::fs::{File, read_to_string};
 use std::io::{self, BufRead, Seek, SeekFrom};
-use std::path::Path;
 
 use db::btree::BTreeMap;
-
-fn buf_reader<P>(filename: P) -> io::Result<io::BufReader<File>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file))
-}
-
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    buf_reader(filename).map(|b| b.lines())
-}
+use db::fs::{buf_reader, read_lines};
 
 type Parts = Vec<String>;
 
@@ -379,7 +364,7 @@ impl Index {
 const QUERY: &str = "queries/join.json";
 
 fn main() {
-    let query = fs::read_to_string(QUERY).unwrap();
+    let query = read_to_string(QUERY).unwrap();
     let json: Value = serde_json::from_str(&query).unwrap();
     let query = Query::from(json);
 

@@ -434,9 +434,14 @@ fn main() {
     let schema = Schema::new("movies");
     let mut scanner = FileScan::new("movies");
     // meh, this is a vec... bleeping FromIterator
-    let index: Vec<Index> = IndexBuilder::new("movieId", &mut scanner, &schema)
+    let index = IndexBuilder::new("movieId", &mut scanner, &schema)
         .into_iter()
-        .collect();
+        // uhhh I don't know about this...
+        // maybe I don't need an iterator for the
+        // IndexBuilder? :thinking:
+        .collect::<Vec<_>>()
+        .pop()
+        .unwrap();
     println!("bin search:");
-    println!("{:?}", index[0].search("5000"));
+    println!("{:?}", index.search("5000"));
 }

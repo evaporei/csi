@@ -2,7 +2,7 @@ use std::fs::read_to_string;
 
 use db::index::IndexBuilder;
 use db::query::Query;
-use db::source::{FileScan, Metadata, NestedJoin, Projector, Row, Schema, Selector};
+use db::source::{FileScan, Metadata, HashJoin, Projector, Row, Schema, Selector};
 
 // const QUERY: &str = "queries/simple.json";
 // const QUERY: &str = "queries/multi-table.json";
@@ -24,7 +24,8 @@ fn main() {
         let mut outer = scanners.remove(0);
         let outer_schema = Schema::new(outer.table());
         let inner_schema = Schema::new(inner.table());
-        let join = NestedJoin::new(&mut outer, &mut inner, outer_schema, inner_schema, join);
+        // let join = NestedJoin::new(&mut outer, &mut inner, outer_schema, inner_schema, join);
+        let join = HashJoin::new(&mut outer, &mut inner, outer_schema, inner_schema, join);
         let results: Vec<_> = join.into_iter().flatten().collect();
         println!("results:");
         println!("{results:?}");

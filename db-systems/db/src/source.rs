@@ -302,3 +302,81 @@ impl<'a> Iterator for NestedJoin<'a> {
         Some(results)
     }
 }
+
+pub struct HashJoin<'a> {
+    outer: &'a mut dyn Source,
+    inner: &'a mut dyn Source,
+    outer_idx: usize,
+    inner_idx: usize,
+    ran: bool,
+}
+
+impl<'a> HashJoin<'a> {
+    pub fn new(
+        outer: &'a mut dyn Source,
+        inner: &'a mut dyn Source,
+        outer_schema: Schema,
+        inner_schema: Schema,
+        on: Vec<String>,
+    ) -> Self {
+        assert_eq!(on[1], "EQUALS", "JOIN clauses only supports EQUALS");
+        let outer_field = &on[0].split('.').skip(1).next().unwrap();
+        let inner_field = &on[2].split('.').skip(1).next().unwrap();
+        let outer_idx = outer_schema
+            .fields
+            .iter()
+            .position(|f| f == outer_field)
+            .expect("unrecognized field for outer table in JOIN");
+        let inner_idx = inner_schema
+            .fields
+            .iter()
+            .position(|f| f == inner_field)
+            .expect("unrecognized field for inner table in JOIN");
+        Self {
+            outer,
+            inner,
+            ran: false,
+            outer_idx,
+            inner_idx,
+        }
+    }
+}
+
+// std's is faster than mine, and it has iterators
+use std::collections::BTreeMap;
+
+impl<'a> Iterator for HashJoin<'a> {
+    // here we go again
+    type Item = Vec<Row>;
+
+    // inner join
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ran {
+            return None;
+        }
+        self.ran = true;
+
+        let outer_table = self.outer.into_iter().fold(BTreeMap::new(), |mut acc, row| {
+            let outer_column = row[self.outer_idx].clone();
+            acc.insert(outer_column, row);
+            acc
+        });
+        let inner_table = self.inner.into_iter().fold(BTreeMap::new(), |mut acc, row| {
+            let inner_column = row[self.inner_idx].clone();
+            acc.insert(inner_column, row);
+            acc
+        });
+
+        let mut results = vec![];
+
+        for (key, mut value) in outer_table {
+            if inner_table.contains_key(&key) {
+                let mut inner_row = inner_table.get(&key).unwrap().clone();
+                value.append(&mut inner_row);
+                results.push(value);
+            }
+        }
+
+        Some(results)
+    }
+}

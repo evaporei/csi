@@ -32,48 +32,46 @@ pub struct HeapFile {
 // I'm still experimenting with the file API in a
 // procedural manner before I abstract things
 impl HeapFile {
-    pub fn create(table: &str) -> Self {
+    pub fn create(table: &str) -> Result<Self, io::Error> {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             // maybe change folder if cfg(test)?
-            .open(format!("./data/{table}"))
-            .unwrap();
+            .open(format!("./data/{table}"))?;
 
         // 8 (64 bits) * 2
         let ptr_lower: usize = 16;
         // end of block
         let ptr_upper: usize = 8192;
-        file.write_all(&ptr_lower.to_be_bytes()).unwrap();
-        file.write_all(&ptr_upper.to_be_bytes()).unwrap();
+        file.write_all(&ptr_lower.to_be_bytes())?;
+        file.write_all(&ptr_upper.to_be_bytes())?;
 
         // fill whole block
-        file.write_all(&[0; 8192 - 16]).unwrap();
+        file.write_all(&[0; 8192 - 16])?;
 
         let used = 8 + 8;
 
-        Self {
+        Ok(Self {
             ptr_lower,
             ptr_upper,
             free_space: ptr_upper - used,
-            writer: io::BufWriter::new(file.try_clone().unwrap()),
+            writer: io::BufWriter::new(file.try_clone()?),
             reader: io::BufReader::new(file),
-        }
+        })
     }
 
-    pub fn open(table: &str) -> Self {
+    pub fn open(table: &str) -> Result<Self, io::Error> {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(format!("./data/{table}"))
-            .unwrap();
+            .open(format!("./data/{table}"))?;
 
         let mut ptr_lower = [0; 8];
-        file.read_exact(&mut ptr_lower).unwrap();
+        file.read_exact(&mut ptr_lower)?;
 
         let mut ptr_upper = [0; 8];
-        file.read_exact(&mut ptr_upper).unwrap();
+        file.read_exact(&mut ptr_upper)?;
 
         let ptr_lower = usize::from_be_bytes(ptr_lower);
         let ptr_upper = usize::from_be_bytes(ptr_upper);
@@ -82,22 +80,22 @@ impl HeapFile {
         let tuples = 8192 - ptr_upper;
         let used = 8 + 8 + ptrs + tuples;
 
-        Self {
+        Ok(Self {
             ptr_lower,
             ptr_upper,
             free_space: 8192 - used,
             writer: io::BufWriter::new(file.try_clone().unwrap()),
             reader: io::BufReader::new(file),
-        }
+        })
     }
 
-    pub fn insert(&mut self, row: Row) {
+    pub fn insert(&mut self, row: Row) -> Result<(), io::Error> {
         // TODO (important): check extra space size (if we're able to write)
         // otherwise: new block (oh boy that will be a lot of work)
         let mut buffer = vec![];
         for column in row {
-            buffer.write_all(&column.len().to_be_bytes()).unwrap();
-            buffer.write_all(&column.as_bytes()).unwrap();
+            buffer.write_all(&column.len().to_be_bytes())?;
+            buffer.write_all(&column.as_bytes())?;
         }
         let buffer_len = buffer.len(); // fixme
         let new_upper = self.ptr_upper - buffer_len - 8;
@@ -108,55 +106,51 @@ impl HeapFile {
 
         // maybe use SeekFrom::End and set ptr_upper to the result of .seek()
         // though in the future multiple pages might complicate things
-        self.writer
-            .seek(SeekFrom::Start((new_upper) as u64))
-            .unwrap();
-        self.writer.write_all(&buffer_len.to_be_bytes()).unwrap();
-        self.writer.write_all(&buffer).unwrap();
-        self.update_ptrs(new_upper);
+        self.writer.seek(SeekFrom::Start((new_upper) as u64))?;
+        self.writer.write_all(&buffer_len.to_be_bytes())?;
+        self.writer.write_all(&buffer)?;
+        self.update_ptrs(new_upper)?;
         self.free_space -= 8 + buffer_len;
         // we'll see if we should keep this
-        self.writer.flush().unwrap();
+        self.writer.flush()?;
+        Ok(())
     }
 
     // header & line ptrs shenanigans
-    fn update_ptrs(&mut self, new_upper: usize) {
+    fn update_ptrs(&mut self, new_upper: usize) -> Result<(), io::Error> {
         // let's write the header
-        self.writer.seek(SeekFrom::Start(0)).unwrap();
+        self.writer.seek(SeekFrom::Start(0))?;
         // new line ptr
-        self.writer
-            .write_all(&(self.ptr_lower + 8).to_be_bytes())
-            .unwrap();
-        self.writer.write_all(&new_upper.to_be_bytes()).unwrap();
-        self.writer
-            .seek(SeekFrom::Start(self.ptr_lower as u64))
-            .unwrap();
+        self.writer.write_all(&(self.ptr_lower + 8).to_be_bytes())?;
+        self.writer.write_all(&new_upper.to_be_bytes())?;
+        self.writer.seek(SeekFrom::Start(self.ptr_lower as u64))?;
         // update local
         self.ptr_upper = new_upper;
         self.ptr_lower += 8;
         // write new line ptr
-        self.writer.write_all(&new_upper.to_be_bytes()).unwrap();
+        self.writer.write_all(&new_upper.to_be_bytes())?;
+        Ok(())
     }
 
     // starts at 0
     // needs to be mut because of the underlying file buffers (maybe FIXME?)
-    pub fn get(&mut self, n: usize) -> Option<Row> {
+    pub fn get(&mut self, n: usize) -> Result<Option<Row>, io::Error> {
         let offset = 16 + 8 * n;
-        self.reader.seek(SeekFrom::Start(offset as u64)).unwrap();
+        self.reader.seek(SeekFrom::Start(offset as u64))?;
         let mut line_ptr = [0; 8];
-        self.reader.read_exact(&mut line_ptr).unwrap();
+        self.reader.read_exact(&mut line_ptr)?;
         let line_ptr = usize::from_be_bytes(line_ptr);
         // we wrote all zeroes previously
         if line_ptr == 0 {
-            return None;
+            return Ok(None);
         }
-        self.reader.seek(SeekFrom::Start(line_ptr as u64)).unwrap();
+        self.reader.seek(SeekFrom::Start(line_ptr as u64))?;
         // we can read up until this
         let mut tuple_size = [0; 8];
-        self.reader.read_exact(&mut tuple_size).unwrap();
+        self.reader.read_exact(&mut tuple_size)?;
         let tuple_size = usize::from_be_bytes(tuple_size);
         let mut raw_row = vec![0; tuple_size];
-        self.reader.read_exact(&mut raw_row).unwrap();
+        self.reader.read_exact(&mut raw_row)?;
         let mut row = vec![];
         let mut curr = 0;
         while curr < tuple_size {
@@ -168,7 +162,7 @@ impl HeapFile {
             row.push(field);
             curr += 8 + field_len;
         }
-        Some(row)
+        Ok(Some(row))
     }
 }
 
@@ -178,7 +172,7 @@ pub struct HeapIterator {
 }
 
 impl IntoIterator for HeapFile {
-    type Item = Row;
+    type Item = Result<Row, io::Error>;
     type IntoIter = HeapIterator;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -187,9 +181,9 @@ impl IntoIterator for HeapFile {
 }
 
 impl Iterator for HeapIterator {
-    type Item = Row;
+    type Item = Result<Row, io::Error>;
     fn next(&mut self) -> Option<Self::Item> {
-        let row = self.heap.get(self.n)?;
+        let row = self.heap.get(self.n).transpose()?;
         self.n += 1;
         Some(row)
     }
@@ -197,7 +191,7 @@ impl Iterator for HeapIterator {
 
 #[test]
 fn test_heap_file() {
-    let heap = HeapFile::create("test_movies");
+    let heap = HeapFile::create("test_movies").unwrap();
 
     let expected: [u8; 16] = [
         // 16
@@ -210,7 +204,7 @@ fn test_heap_file() {
     assert_eq!(header, expected);
     assert_eq!(heap.free_space, 8176);
 
-    let mut heap = HeapFile::open("test_movies");
+    let mut heap = HeapFile::open("test_movies").unwrap();
 
     assert_eq!(heap.ptr_lower, 16);
     assert_eq!(heap.ptr_upper, 8192);
@@ -228,7 +222,7 @@ fn test_heap_file() {
         // 00 00 00 00 00 00 00 09 41 6e 69 6d 61 74 69 6f 6e
         "Animation".into(),
     ];
-    heap.insert(movie.clone());
+    heap.insert(movie.clone()).unwrap();
 
     let expected = [
         // upper length
@@ -263,12 +257,12 @@ fn test_heap_file() {
     f.read_exact(&mut header).unwrap();
     assert_eq!(header, expected);
 
-    assert_eq!(heap.get(0).unwrap(), movie);
+    assert_eq!(heap.get(0).unwrap(), Some(movie));
 }
 
 #[test]
 fn test_heap_file_iterator() {
-    let mut heap = HeapFile::create("test_it");
+    let mut heap = HeapFile::create("test_it").unwrap();
 
     let movies = vec![
         vec![
@@ -299,10 +293,13 @@ fn test_heap_file_iterator() {
     ];
 
     for movie in &movies {
-        heap.insert(movie.clone());
+        heap.insert(movie.clone()).unwrap();
     }
 
-    assert_eq!(heap.into_iter().collect::<Vec<_>>(), movies);
+    assert_eq!(
+        heap.into_iter().map(Result::unwrap).collect::<Vec<_>>(),
+        movies
+    );
 }
 
 #[test]
@@ -318,9 +315,9 @@ fn test_heap_full() {
     // fit the same movie again
     let movies = std::iter::repeat(movie).take(89);
 
-    let mut heap = HeapFile::create("test_full");
+    let mut heap = HeapFile::create("test_full").unwrap();
 
     for movie in movies {
-        heap.insert(movie);
+        heap.insert(movie).unwrap();
     }
 }

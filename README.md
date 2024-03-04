@@ -28,7 +28,7 @@
   - Threads, Shared Memory, and Parallelism [exercises](./langs-systems/threads)
   - Concurrency and Memory Models (didn't do the exercise yet)
   - Garbage Collection https://github.com/evaporei/gc
-- Database Systems https://github.com/evaporei/db
+- Database Systems https://github.com/evaporei/daigrass
   - Introduction to Database Systems
   - Sorting, Hashing, and Single Table Queries
   - Physical Storage

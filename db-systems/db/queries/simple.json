@@ -1,5 +1,0 @@
-[
-  ["PROJECTION", ["title"]],
-  ["SELECTION", ["movieId", "EQUALS", "5000"]],
-  ["SCAN", ["movies"]]
-]

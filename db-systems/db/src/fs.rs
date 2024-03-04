@@ -22,6 +22,7 @@ where
 pub struct HeapFile {
     ptr_lower: usize,
     ptr_upper: usize,
+    free_space: usize,
     // TODO: convert those two into one structure
     writer: io::BufWriter<File>,
     reader: io::BufReader<File>,
@@ -50,9 +51,12 @@ impl HeapFile {
         // fill whole block
         file.write_all(&[0; 8192 - 16]).unwrap();
 
+        let used = 8 + 8;
+
         Self {
             ptr_lower,
             ptr_upper,
+            free_space: ptr_upper - used,
             writer: io::BufWriter::new(file.try_clone().unwrap()),
             reader: io::BufReader::new(file),
         }
@@ -71,9 +75,17 @@ impl HeapFile {
         let mut ptr_upper = [0; 8];
         file.read_exact(&mut ptr_upper).unwrap();
 
+        let ptr_lower = usize::from_be_bytes(ptr_lower);
+        let ptr_upper = usize::from_be_bytes(ptr_upper);
+
+        let ptrs = (ptr_lower - 16) / 8;
+        let tuples = 8192 - ptr_upper;
+        let used = 8 + 8 + ptrs + tuples;
+
         Self {
-            ptr_lower: usize::from_be_bytes(ptr_lower),
-            ptr_upper: usize::from_be_bytes(ptr_upper),
+            ptr_lower,
+            ptr_upper,
+            free_space: 8192 - used,
             writer: io::BufWriter::new(file.try_clone().unwrap()),
             reader: io::BufReader::new(file),
         }
@@ -89,6 +101,11 @@ impl HeapFile {
         }
         let buffer_len = buffer.len(); // fixme
         let new_upper = self.ptr_upper - buffer_len - 8;
+
+        if buffer_len + 8 > self.free_space {
+            panic!("no more space in heap file");
+        }
+
         // maybe use SeekFrom::End and set ptr_upper to the result of .seek()
         // though in the future multiple pages might complicate things
         self.writer
@@ -97,6 +114,7 @@ impl HeapFile {
         self.writer.write_all(&buffer_len.to_be_bytes()).unwrap();
         self.writer.write_all(&buffer).unwrap();
         self.update_ptrs(new_upper);
+        self.free_space -= 8 + buffer_len;
         // we'll see if we should keep this
         self.writer.flush().unwrap();
     }
@@ -179,7 +197,7 @@ impl Iterator for HeapIterator {
 
 #[test]
 fn test_heap_file() {
-    let _heap = HeapFile::create("test_movies");
+    let heap = HeapFile::create("test_movies");
 
     let expected: [u8; 16] = [
         // 16
@@ -190,11 +208,14 @@ fn test_heap_file() {
     let mut f = File::open("./data/test_movies").unwrap();
     f.read_exact(&mut header).unwrap();
     assert_eq!(header, expected);
+    assert_eq!(heap.free_space, 8176);
 
     let mut heap = HeapFile::open("test_movies");
 
     assert_eq!(heap.ptr_lower, 16);
     assert_eq!(heap.ptr_upper, 8192);
+    // remains the same with ::open()
+    assert_eq!(heap.free_space, 8176);
 
     let movie = vec![
         // -------- length ------- 1
@@ -223,6 +244,7 @@ fn test_heap_file() {
     let new_upper = 8192 - expected.len();
     assert_eq!(heap.ptr_upper, new_upper);
     assert_eq!(heap.ptr_lower, 24);
+    assert_eq!(heap.free_space, 8192 - 16 - expected.len());
 
     f.seek(SeekFrom::Start((8192 - expected.len()) as u64))
         .unwrap();
@@ -281,4 +303,24 @@ fn test_heap_file_iterator() {
     }
 
     assert_eq!(heap.into_iter().collect::<Vec<_>>(), movies);
+}
+
+#[test]
+#[should_panic(expected = "no more space in heap file")]
+fn test_heap_full() {
+    let movie = vec![
+        "1".into(),
+        "Toy Story (1995)".into(),
+        "Adventure|Animation|Children|Comedy|Fantasy".into(),
+    ];
+
+    // after 89 of the movie above, we have no more extra space to
+    // fit the same movie again
+    let movies = std::iter::repeat(movie).take(89);
+
+    let mut heap = HeapFile::create("test_full");
+
+    for movie in movies {
+        heap.insert(movie);
+    }
 }

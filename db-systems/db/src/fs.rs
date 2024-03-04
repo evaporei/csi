@@ -122,12 +122,16 @@ impl HeapFile {
 
     // starts at 0
     // needs to be mut because of the underlying file buffers (maybe FIXME?)
-    pub fn get(&mut self, n: usize) -> Row {
+    pub fn get(&mut self, n: usize) -> Option<Row> {
         let offset = 16 + 8 * n;
         self.reader.seek(SeekFrom::Start(offset as u64)).unwrap();
         let mut line_ptr = [0; 8];
         self.reader.read_exact(&mut line_ptr).unwrap();
         let line_ptr = usize::from_be_bytes(line_ptr);
+        // we wrote all zeroes previously
+        if line_ptr == 0 {
+            return None;
+        }
         self.reader.seek(SeekFrom::Start(line_ptr as u64)).unwrap();
         // we can read up until this
         let mut tuple_size = [0; 8];
@@ -146,7 +150,30 @@ impl HeapFile {
             row.push(field);
             curr += 8 + field_len;
         }
-        row
+        Some(row)
+    }
+}
+
+pub struct HeapIterator {
+    n: usize,
+    heap: HeapFile,
+}
+
+impl IntoIterator for HeapFile {
+    type Item = Row;
+    type IntoIter = HeapIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        HeapIterator { n: 0, heap: self }
+    }
+}
+
+impl Iterator for HeapIterator {
+    type Item = Row;
+    fn next(&mut self) -> Option<Self::Item> {
+        let row = self.heap.get(self.n)?;
+        self.n += 1;
+        Some(row)
     }
 }
 
@@ -214,5 +241,44 @@ fn test_heap_file() {
     f.read_exact(&mut header).unwrap();
     assert_eq!(header, expected);
 
-    assert_eq!(heap.get(0), movie);
+    assert_eq!(heap.get(0).unwrap(), movie);
+}
+
+#[test]
+fn test_heap_file_iterator() {
+    let mut heap = HeapFile::create("test_it");
+
+    let movies = vec![
+        vec![
+            "1".into(),
+            "Toy Story (1995)".into(),
+            "Adventure|Animation|Children|Comedy|Fantasy".into(),
+        ],
+        vec![
+            "2".into(),
+            "Jumanji (1995)".into(),
+            "Adventure|Children|Fantasy".into(),
+        ],
+        vec![
+            "3".into(),
+            "Grumpier Old Men (1995)".into(),
+            "Comedy|Romance".into(),
+        ],
+        vec![
+            "4".into(),
+            "Waiting to Exhale (1995)".into(),
+            "Comedy|Drama|Romance".into(),
+        ],
+        vec![
+            "5".into(),
+            "Father of the Bride Part II (1995)".into(),
+            "Comedy".into(),
+        ],
+    ];
+
+    for movie in &movies {
+        heap.insert(movie.clone());
+    }
+
+    assert_eq!(heap.into_iter().collect::<Vec<_>>(), movies);
 }

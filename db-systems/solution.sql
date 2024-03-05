@@ -1,0 +1,11 @@
+-- 1. What is the total bonus amount for each employee?
+select sum(amount), emp_id from bonus group by emp_id order by emp_id;
+-- +-------------------------------------------------------------------------+
+-- | QUERY PLAN                                                              |
+-- |-------------------------------------------------------------------------|
+-- | Sort  (cost=7940.17..8045.73 rows=42223 width=12)                       |
+-- |   Sort Key: emp_id                                                      |
+-- |   ->  HashAggregate  (cost=4274.00..4696.23 rows=42223 width=12)        |
+-- |         Group Key: emp_id                                               |
+-- |         ->  Seq Scan on bonus  (cost=0.00..3274.00 rows=200000 width=8) |
+-- +-------------------------------------------------------------------------+

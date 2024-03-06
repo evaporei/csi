@@ -34,6 +34,6 @@
   - Physical Storage
   - Indexes
   - Joins
-  - Query Optimization
+  - Query Optimization [exercises](./db-systems)
   - Transactions and Concurrency
   - Logging for Atomicity and Durability

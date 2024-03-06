@@ -185,3 +185,40 @@ group by
 -- |                           ->  Hash  (cost=1.03..1.03 rows=3 width=13)                                      |
 -- |                                 ->  Seq Scan on department d  (cost=0.00..1.03 rows=3 width=13)            |
 -- +------------------------------------------------------------------------------------------------------------+
+
+-- 4. Which employees earned more than their managers?
+select
+    e.emp_id as employee, e.salary, m.emp_id as manager, m.salary
+from
+    employee e
+join
+    employee m
+on
+    e.manager_id = m.emp_id
+where
+    e.salary > m.salary;
+-- +----------+--------+---------+--------+
+-- | employee | salary | manager | salary |
+-- |----------+--------+---------+--------|
+-- | 1        | 77267  | 2       | 76194  |
+-- | 2        | 76194  | 3       | 73497  |
+-- | 3        | 73497  | 4       | 70653  |
+-- | 5        | 75596  | 6       | 72980  |
+-- | 7        | 79700  | 8       | 71543  |
+-- | 9        | 78652  | 10      | 75168  |
+-- | 13       | 78705  | 4       | 70653  |
+-- | 14       | 78817  | 5       | 75596  |
+-- | 15       | 76142  | 6       | 72980  |
+-- | 17       | 74552  | 8       | 71543  |
+-- +----------+--------+---------+--------+
+-- I thought Hash Join's couldn't be done with >, only with = operation.
+-- +-----------------------------------------------------------------------------+
+-- | QUERY PLAN                                                                  |
+-- |-----------------------------------------------------------------------------|
+-- | Hash Join  (cost=1641.00..2788.25 rows=16667 width=16)                      |
+-- |   Hash Cond: (e.manager_id = m.emp_id)                                      |
+-- |   Join Filter: (e.salary > m.salary)                                        |
+-- |   ->  Seq Scan on employee e  (cost=0.00..1016.00 rows=50000 width=12)      |
+-- |   ->  Hash  (cost=1016.00..1016.00 rows=50000 width=8)                      |
+-- |         ->  Seq Scan on employee m  (cost=0.00..1016.00 rows=50000 width=8) |
+-- +-----------------------------------------------------------------------------+

@@ -37,3 +37,12 @@
   - Query Optimization [exercises](./db-systems)
   - Transactions and Concurrency
   - Logging for Atomicity and Durability
+- Data Structures for Storage and Retrieval https://github.com/evaporei/reberu
+  - Overview
+  - LevelDB Architecture and Project Setup
+  - Memtables and Skip Lists
+  - Persistence and Write-Ahead Logs
+  - Immutable SSTables
+  - Catch Up Session
+  - LSM Trees and Leveled Compaction
+  - Bloom Filters
